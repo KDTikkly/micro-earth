@@ -111,11 +111,11 @@ micro-earth/
 
 > ——「哼，给你打包好了。点那个链接，直接下载，不需要装环境。才不是特地做的……只是刚好做了而已。」
 
-[![Download](https://img.shields.io/badge/Download-v11.1.0%20Windows%20便携版-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
+[![Download](https://img.shields.io/badge/Download-v11.1.0%20Windows%20便携版-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.0/Micro-Earth-Digital-Twin-v11.1.0-win-portable.exe)
 
 | 版本 | 平台 | 大小 | 链接 |
 |------|------|------|------|
-| **v11.1.0** 便携版 | Windows x64 | ~172 MB | [GitHub Releases →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0) |
+| **v11.1.0** 便携版 | Windows x64 | ~172 MB | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.0/Micro-Earth-Digital-Twin-v11.1.0-win-portable.exe) |
 
 > **便携版说明**：内嵌 Electron + React 前端，无需安装 Node.js / Python，双击即运行前端界面。  
 > 完整版（含 Python AI 后端）待后续 v12 发布。
