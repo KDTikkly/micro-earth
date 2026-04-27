@@ -819,10 +819,10 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         onToggle={handleBoundaryToggle}
       />
 
-      {/* 地图源切换面板 zIndex:700 */}
+      {/* 地图源切换面板 zIndex:700 · 右侧 FETCH 下方 */}
       <div style={{
-        position:"absolute", top:8, left:8, zIndex:700,
-        display:"flex", flexDirection:"column", gap:4,
+        position:"absolute", top:44, right:8, zIndex:700,
+        display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4,
       }}>
         {/* 探测状态提示 */}
         {tileProbing && (
