@@ -111,13 +111,13 @@ micro-earth/
 
 > ——「地球修好了。这次换了高德卫星图，国内网络也能跑。顺便做了安装包版本，双击就装好了……才不是因为你嫌麻烦才做的。」
 
-[![Download Windows](https://img.shields.io/badge/Download-v11.1.1%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.1/Micro-Earth-Digital-Twin-Setup-v11.1.1-win-x64.exe)
-[![Download macOS](https://img.shields.io/badge/Download-v11.1.1%20macOS%20DMG-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.1)
+[![Download Windows](https://img.shields.io/badge/Download-v11.2%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-Setup-v11.2-win-x64.exe)
+[![Download macOS](https://img.shields.io/badge/Download-v11.2%20macOS%20DMG-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.2)
 
 | 版本 | 平台 | 大小 | 类型 | 链接 |
 |------|------|------|------|------|
-| **v11.1.1** | Windows x64 | ~75 MB | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.1/Micro-Earth-Digital-Twin-Setup-v11.1.1-win-x64.exe) |
-| **v11.1.1** | macOS (x64 + arm64) | ~构建中 | DMG | [GitHub Actions 自动构建 →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.1) |
+| **v11.2** | Windows x64 | ~75 MB | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-Setup-v11.2-win-x64.exe) |
+| **v11.2** | macOS (x64 + arm64) | ~构建中 | DMG | [GitHub Releases →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.2) |
 
 > **v11.1.0 旧版（便携版）** → [历史 Release](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
 
