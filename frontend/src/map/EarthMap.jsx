@@ -16,7 +16,6 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useAgentStore } from "../store/agentStore";
-import { WS_BASE } from "../utils/wsConfig";
 
 /* ── 瓦片源配置 ──────────────────────────────────────────── */
 const TILE_SOURCES = {
@@ -60,15 +59,15 @@ const TILE_SOURCES = {
  */
 async function probeTileSource(key) {
   const { probe } = TILE_SOURCES[key];
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 3000);
     const resp = await fetch(probe, { method: "HEAD", mode: "no-cors", signal: ctrl.signal });
-    clearTimeout(timer);
-    // no-cors 模式下 resp.type === "opaque"，status === 0，但不抛异常即视为可达
     return resp.type === "opaque" || resp.ok;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -492,11 +491,8 @@ function EntityCanvas({ mapInst, entities, disasterLat, disasterLon, disasterAct
 export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 }) {
   const {
     geojsonData, entityData,
-    setGeoJson, appendLog, setStatus, setHeatmap, whatIf,
-    setWindfield, windfield, timelineHour,
+    windfield, timelineHour,
   } = useAgentStore();
-
-  const wsRef        = useRef(null);
   const containerRef = useRef(null);   // 地图容器 DOM
   const mapRef       = useRef(null);   // maplibre-gl Map 实例
   const [isMounted,  setIsMounted]  = useState(false);   // 客户端挂载防护
@@ -622,9 +618,14 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
 
       mapRef.current = map;
       setMapInst(map);
+
+      useAgentStore.getState().registerFlyTo(({ city, lon, lat }) => {
+        map.flyTo({ center: [lon, lat], zoom: 6, duration: 2000 });
+      });
     });
 
     return () => {
+      useAgentStore.getState().registerFlyTo(null);
       map.remove();
       mapRef.current = null;
     };
@@ -711,43 +712,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     }
   }, [showCountries, showProvinces]);
 
-  /* ── WebSocket ──────────────────────────────────────── */
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    setStatus("CONNECTING");
-    const ws = new WebSocket(`${WS_BASE}/ws/agent-stream`);
-    wsRef.current = ws;
-    ws.onopen = () => {
-      setStatus("RUNNING");
-      ws.send(JSON.stringify({
-        region, lat, lon,
-        temp_offset:       whatIf?.tempOffset       ?? 0.0,
-        precip_multiplier: whatIf?.precipMultiplier ?? 1.0,
-      }));
-    };
-    ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const ts   = new Date().toLocaleTimeString();
-        if (data.event === "geojson") { setGeoJson(data.data); appendLog({ ...data, ts, message: data.message }); }
-        else appendLog({ ...data, ts });
-        if (data.event === "entities" && data.data) useAgentStore.getState().setEntityData(data.data);
-        if (data.event === "trade"    && data.data) useAgentStore.getState().appendTrade(data.data);
-        if (data.event === "heatmap"  && data.data) setHeatmap(data.data);
-        if (data.event === "windfield"&& data.data) setWindfield(data.data);
-        if (data.event === "risk"     && data.data) useAgentStore.getState().setRiskData(data.data);
-        if (data.event === "done")  setStatus("IDLE");
-        if (data.event === "error") setStatus("ERROR");
-      } catch { /* ignore */ }
-    };
-    ws.onerror = () => {
-      setStatus("ERROR");
-      appendLog({ event:"error", message:"[ERROR] WebSocket 连接失败", ts: new Date().toLocaleTimeString() });
-    };
-    ws.onclose = () => setStatus("IDLE");
-  }, [region, lat, lon, setGeoJson, appendLog, setStatus, setHeatmap, setWindfield, whatIf]);
-
-  useEffect(() => { connect(); return () => wsRef.current?.close(); }, [connect]);
+  /* ── WebSocket 已移至 AgentTerminal 统一管理，EarthMap 仅从 store 读数据 ── */
 
   /* ── 衍生数据 ───────────────────────────────────────── */
   const nodeCount        = geojsonData?.features?.length ?? 0;
@@ -891,7 +856,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
           background:"#00AA00",border:"2px solid #000",
         }}/>
         <button
-          onClick={connect}
+          onClick={() => useAgentStore.getState().requestRun()}
           style={{
             position:"relative", background:"#00FF00",
             border:"2.5px solid #000", padding:"5px 12px",

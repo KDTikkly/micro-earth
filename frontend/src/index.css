@@ -12,7 +12,6 @@
 
 /* Electron 自定义标题栏占位：当 .electron-mode 类挂载时，顶部留 40px */
 body.electron-mode { padding-top: 40px; }
-body.electron-mode header { top: 40px; }
 
 /* 标题栏心跳动画 */
 @keyframes titlebarPulse {
@@ -156,11 +155,6 @@ body {
   margin-left: 2px;
   color: var(--ink-black);
 }
-
-/* ── 滚动条（图纸风）──────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #f5f5f5; border-left: 1px solid var(--wireframe); }
-::-webkit-scrollbar-thumb { background: var(--ink-black); }
 
 /* ── 全息面板动画 ─────────────────────────────────────────── */
 @keyframes holoGlow {

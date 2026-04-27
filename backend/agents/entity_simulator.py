@@ -177,10 +177,13 @@ def simulate_entities(
         amm_reset()
 
     if disaster_lat is None:
-        lats = [e["location"]["lat"] for e in entities]
-        lons = [e["location"]["lon"] for e in entities]
-        disaster_lat = sum(lats) / len(lats)
-        disaster_lon = sum(lons) / len(lons)
+        if not entities:
+            disaster_lat, disaster_lon = 0.0, 0.0
+        else:
+            lats = [e["location"]["lat"] for e in entities]
+            lons = [e["location"]["lon"] for e in entities]
+            disaster_lat = sum(lats) / len(lats)
+            disaster_lon = sum(lons) / len(lons)
 
     disaster_active  = risk_index >= EVACUATION_RISK_THRESHOLD
     trade_events     = []

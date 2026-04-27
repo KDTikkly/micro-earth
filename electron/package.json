@@ -40,7 +40,13 @@
       "assets/**/*",
       "../frontend/dist/**/*"
     ],
-    "extraResources": [],
+    "extraResources": [
+      {
+        "from": "../backend/dist/micro_earth_backend/",
+        "to": "backend",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
       "target": [
         {

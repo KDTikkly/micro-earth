@@ -3,7 +3,7 @@
  * 灾害沙盘控制台：Memphis 赛博风格滑块面板
  * 用户拖动滑块后，触发 What-If API 重新推演并更新热力矩阵
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAgentStore } from "../store/agentStore";
 import { HTTP_BASE } from "../utils/wsConfig";
 
@@ -130,6 +130,13 @@ export default function WhatIfSandbox() {
           message: `[${ts2}] [WhatIf] [OK] simulation done | risk=${data.risk_data?.risk_index} [${data.risk_data?.risk_level}] | flood=${data.heatmap?.flood_zones?.length ?? 0}`,
           node: "WhatIf",
         });
+      } else {
+        const ts2 = new Date().toLocaleTimeString();
+        appendLog({
+          event: "error", ts: ts2,
+          message: `[${ts2}] [WhatIf] [ERROR] server returned ${res.status}`,
+          node: "WhatIf",
+        });
       }
     } catch (e) {
       const ts3 = new Date().toLocaleTimeString();
@@ -143,11 +150,14 @@ export default function WhatIfSandbox() {
     }
   }, [region, lat, lon, setHeatmap, appendLog]);
 
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
+
   const handleTempChange = (val) => {
     setWhatIf({ tempOffset: val });
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      triggerWhatIf(val, whatIf.precipMultiplier);
+      const latest = useAgentStore.getState().whatIf;
+      triggerWhatIf(val, latest.precipMultiplier);
     }, 600);
   };
 
@@ -155,7 +165,8 @@ export default function WhatIfSandbox() {
     setWhatIf({ precipMultiplier: val });
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      triggerWhatIf(whatIf.tempOffset, val);
+      const latest = useAgentStore.getState().whatIf;
+      triggerWhatIf(latest.tempOffset, val);
     }, 600);
   };
 

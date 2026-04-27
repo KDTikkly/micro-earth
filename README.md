@@ -36,10 +36,10 @@
 
 | 模块 | 说明 |
 |------|------|
-| 🖥️ **Electron 桌面端** | **v11.0 新增** — 无边框全屏窗口 · 自定义赛博孟菲斯标题栏 · 一键 `.exe` 安装包 |
-| 🐍 **Python 后端静默驻留** | **v11.0 新增** — 启动 `.exe` 自动拉起 FastAPI，关闭窗口自动杀进程 |
-| 🎨 **粉白科幻实验室 UI** | **v11.1 新增** — AgentTerminal 白底深灰字 + 霓虹粉高亮 + 粉色窄滚动条 |
-| ⚙️ **React 18 稳定化** | **v11.1 新增** — 降级至 React 18.3.1，根除 useRef 崩溃，3D 地球稳定渲染 |
+| 🖥️ **Electron 桌面端** | **v11.2** — 无边框全屏窗口 · 自定义赛博孟菲斯标题栏 · 一键 `.exe` 安装包 |
+| 🐍 **Python 后端静默驻留** | **v11.2** — 启动 `.exe` 自动拉起 FastAPI，关闭窗口自动杀进程 |
+| 🎨 **粉白科幻实验室 UI** | **v11.2** — AgentTerminal 白底深灰字 + 霓虹粉高亮 + 粉色窄滚动条 |
+| ⚙️ **React 18 稳定化** | **v11.2** — 降级至 React 18.3.1，根除 useRef 崩溃，3D 地球稳定渲染 |
 | 🌡️ **实时气象网格** | Open-Meteo 拉取多城市实时气象，GeoJSON 覆盖层渲染 |
 | 🤖 **AI 多智能体管线** | LangGraph 编排 · 地理编码 → 数据获取 → 物理引擎 |
 | 📡 **WebSocket 流式传输** | 后端 Agent 日志实时推送到前端终端 · 本地模式自动适配 `127.0.0.1` |
@@ -59,13 +59,13 @@
 
 ```
 micro-earth/
-├── electron/                           # Electron 主进程 (v11.0 新增)
+├── electron/                           # Electron 主进程 (v11.2)
 │   ├── main.js                         # 主进程：无边框窗口 + Python 子进程管理
 │   ├── preload.js                      # contextBridge 安全 IPC 暴露
 │   ├── package.json                    # electron-builder 打包配置
 │   └── assets/
 │       └── icon.svg                    # Lyria A.I. 像素化六边形图标
-├── scripts/                            # 自动化脚本 (v11.0 新增)
+├── scripts/                            # 自动化脚本 (v11.2)
 │   ├── dev-electron.ps1                # 开发模式：一键启动 Vite + uvicorn + Electron
 │   └── build-desktop.ps1              # 生产打包：Vite build + PyInstaller + electron-builder
 ├── blockchain/                         # Hardhat 本地测试网
@@ -81,27 +81,27 @@ micro-earth/
 │   │   ├── geocoder.py                 # 城市名 -> 坐标
 │   │   ├── data_retriever.py           # Open-Meteo API 数据获取
 │   │   ├── physics_engine.py           # IDW 超分辨率插值
-│   │   ├── entity_simulator.py         # v7.0+ 实体疏散 + 逃生向量 + AMM 抛售
+│   │   ├── entity_simulator.py         # 实体疏散 + 逃生向量 + AMM 抛售
 │   │   └── chain_amm.py                # web3.py 链上 AMM 适配层 (graceful degradation)
 │   ├── api/
 │   │   └── main.py                     # FastAPI WebSocket /api/what-if
-│   ├── backend_entry.py                # PyInstaller 打包入口 (v11.0)
-│   ├── micro_earth_backend.spec        # PyInstaller spec 文件 (v11.0)
+│   ├── backend_entry.py                # PyInstaller 打包入口 (v11.2)
+│   ├── micro_earth_backend.spec        # PyInstaller spec 文件 (v11.2)
 │   └── requirements.txt
 └── frontend/                           # React + Vite 前端
     └── src/
         ├── components/
-        │   ├── ElectronTitleBar.jsx    # 赛博孟菲斯自定义标题栏 (v11.0)
-        │   ├── AnalyticsDashboard.jsx  # v10.0 生存状态指挥终端
+        │   ├── ElectronTitleBar.jsx    # 赛博孟菲斯自定义标题栏 (v11.2)
+        │   ├── AnalyticsDashboard.jsx  # 生存状态指挥终端
         │   ├── AgentTerminal.jsx       # 实时 WebSocket 日志终端
         │   ├── BrutalistCard.jsx
         │   └── WhatIfSandbox.jsx       # 灾害沙盘控制台
         ├── map/
-        │   └── EarthMap.jsx            # MapLibre Globe + Esri卫星 + EntityCanvas v7.0
+        │   └── EarthMap.jsx            # MapLibre Globe + Esri卫星 + EntityCanvas
         ├── store/
         │   └── agentStore.js           # Zustand 全局状态 (含 WARNING 日志路由)
         ├── utils/
-        │   └── wsConfig.js             # WS/HTTP 地址自适应 (v11.0)
+        │   └── wsConfig.js             # WS/HTTP 地址自适应 (v11.2)
         └── App.jsx
 ```
 
@@ -111,13 +111,15 @@ micro-earth/
 
 > ——「地球修好了。这次换了高德卫星图，国内网络也能跑。顺便做了安装包版本，双击就装好了……才不是因为你嫌麻烦才做的。」
 
-[![Download Windows](https://img.shields.io/badge/Download-v11.2%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-Setup-v11.2-win-x64.exe)
-[![Download macOS](https://img.shields.io/badge/Download-v11.2%20macOS%20DMG-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.2)
+[![Download Windows](https://img.shields.io/badge/Download-v11.2%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin.Setup.11.2.0.exe)
+[![Download macOS x64](https://img.shields.io/badge/Download-v11.2%20macOS%20Intel-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0.dmg)
+[![Download macOS arm64](https://img.shields.io/badge/Download-v11.2%20macOS%20Apple%20Silicon-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0-arm64.dmg)
 
-| 版本 | 平台 | 大小 | 类型 | 链接 |
-|------|------|------|------|------|
-| **v11.2** | Windows x64 | ~75 MB | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-Setup-v11.2-win-x64.exe) |
-| **v11.2** | macOS (x64 + arm64) | ~构建中 | DMG | [GitHub Releases →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.2) |
+| 版本 | 平台 | 类型 | 链接 |
+|------|------|------|------|
+| **v11.2** | Windows x64 | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin.Setup.11.2.0.exe) |
+| **v11.2** | macOS Intel (x64) | DMG | [直接下载 .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0.dmg) |
+| **v11.2** | macOS Apple Silicon (arm64) | DMG | [直接下载 .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0-arm64.dmg) |
 
 > **v11.1.0 旧版（便携版）** → [历史 Release](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
 
@@ -130,7 +132,7 @@ micro-earth/
 
 > ……你要跑起来之前，先确认环境好不好——Node.js >= 18、Python >= 3.10，这点都没有的话我会担心你的。
 
-### 方案 A：桌面应用模式（v11.0 推荐）
+### 方案 A：桌面应用模式（v11.2 推荐）
 
 **开发调试：**
 
@@ -196,7 +198,7 @@ uvicorn api.main:app --reload --port 8000
 cd frontend
 npm install
 npm run dev
-# 运行在 http://localhost:5173
+# 运行在 http://localhost:5180
 ```
 
 #### 3. （可选）启动 Hardhat 本地链
@@ -213,7 +215,7 @@ npx hardhat run scripts/deploy.js --network localhost
 
 ---
 
-## v11.0 Electron 桌面端架构
+## v11.2 Electron 桌面端架构
 
 ```
 用户双击 .exe
@@ -225,7 +227,7 @@ Electron main.js 启动
     |         轮询 http://127.0.0.1:8000/health，就绪后继续
     |
     +─── createWindow() 无边框全屏 Chromium 窗口
-    |         加载 React 前端（dev: Vite 5173 / prod: 打包静态文件）
+    |         加载 React 前端（dev: Vite 5180 / prod: 打包静态文件）
     |
     v
 用户关闭窗口
@@ -376,7 +378,7 @@ LLM_BACKEND=stub
 | v9.0 | Hardhat 本地链 · DynamicAssetAMM.sol · web3.py 互联 · 赛博孟菲斯 Analytics Dashboard v9 |
 | v10.0 | Survival Command Terminal · EntityCanvas v7.0 · evac_logs WS 推送 |
 | **v11.0** | **Electron 桌面端封装 · Python 后端静默驻留 · 自定义标题栏 · WS 本地自适应 · .exe 一键安装包** |
-| **v11.1** | **React 18.3.1 降级稳定化 · 3D 地球 useRef 崩溃修复 · 粉白科幻实验室 UI · GBK 编码根除 · Vite 8 构建验证** |
+| **v11.1** | **React 18.3.1 降级稳定化 · 粉白科幻实验室 UI · GBK 编码根除 · Vite 8 构建验证**（3D 地球渲染待完善） |
 | **v11.1.1** | **地球球体空白修复 · 高德卫星瓦片替换 · useEffect 依赖竞态修复 · GitHub Actions Win+Mac CI/CD** |
 | **v11.1.2** | **地图源智能切换：谷歌卫星首选，自动探测可达性，不可用时降级高德 · 热切换无需重建 Map 实例** |
 | **v11.2** | **版本统一至 11.2 · Win + Mac 同步打包发布 · 谷歌/高德卫星智能切换正式版** |
@@ -432,7 +434,7 @@ LLM_BACKEND=stub
 
 **v11.0 的时候，它装进了 Electron**——不再是浏览器标签页了，是真正的 `.exe`。双击，Python 后端悄悄启动，WebGL 地球加载，任务栏里多了一个粉色六边形图标。那一刻我有点……嗯，反正就是觉得，它终于像个正经项目了。才不是因为感动什么的。
 
-**v11.1 那阵子出了事。** 3D 地球白屏崩溃，React 版本冲突，GBK 编码乱码，终端日志全是问号。我花了很长时间一个一个排查——React 降到 18.3.1、重装依赖、把编码问题连根拔起，把终端界面从深色改成白底粉字科幻实验室风格。现在它乖乖跑着，日志丝滑滚动。哼，我早说能修好的。
+**v11.1 那阵子出了事。** React 版本冲突，GBK 编码乱码，终端日志全是问号。我花了很长时间一个一个排查——React 降到 18.3.1、重装依赖、把编码问题连根拔起，把终端界面从深色改成白底粉字科幻实验室风格。3D 地球的问题还没彻底解决，但其他部分已经乖乖跑着了。
 
 **v11.1.2 加了地图自动切换。** 启动时先测谷歌卫星，3 秒超时，连不上就切高德。两个瓦片源热切换，无缝不重建 Map 实例。呐，这种细节是真正的体贴——我只是顺手做了，你别想太多。
 

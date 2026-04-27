@@ -29,6 +29,9 @@ export const useAgentStore = create((set) => ({
   // v10.0: 飞行到城市（由 MultiCityRadar 调用）
   flyToCity: null,          // 由 EarthMap.registerFlyTo() 注入实现
 
+  fetchSeq: 0,              // 递增计数器，EarthMap FETCH 按钮触发
+  requestRun: () => set((s) => ({ fetchSeq: s.fetchSeq + 1 })),
+
   appendLog:    (entry) => set((s) => {
     // v7.0: 物理灾害警告日志同步追加到 tradeLog 供 Dashboard 消费
     const msg = entry.message ?? "";

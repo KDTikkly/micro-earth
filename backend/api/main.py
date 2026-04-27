@@ -41,20 +41,26 @@ if hasattr(sys.stderr, "buffer"):
         pass
 
 
+import logging
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from agents.orchestrator import run_graph_stream, run_graph_stream_multi
 from agents.llm_adapter import get_backend_info
 
-app = FastAPI(title="Micro-Earth API", version="0.10.0")
+API_VERSION = "0.10.0"
+
+app = FastAPI(title="Micro-Earth API", version=API_VERSION)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -75,7 +81,7 @@ async def health():
     return {
         "status": "ok",
         "service": "Micro-Earth Backend",
-        "version": "0.9.0",
+        "version": API_VERSION,
         "llm": get_backend_info(),
     }
 
@@ -96,17 +102,19 @@ async def what_if_scenario(req: WhatIfRequest):
     # 获取坐标
     lat, lon = req.lat, req.lon
     region   = req.region
-    if req.city_query:
+    query = req.city_query or (req.region if req.region != "深圳" else "")
+    if query:
         try:
-            lat, lon, region = await geocode(req.city_query)
-        except Exception:
-            pass
+            lat, lon, region = await geocode(query)
+        except Exception as e:
+            logger.warning("[WhatIf] Geocode failed for '%s': %s, using defaults", query, e)
 
     # 获取气象数据
     try:
         geojson = await fetch_shenzhen_geojson(lat, lon)
         features = geojson.get("features", [])
-    except Exception:
+    except Exception as e:
+        logger.warning("[WhatIf] Weather fetch failed: %s, using empty features", e)
         features = []
 
     # 重新计算风险指数（含 What-If 偏移）
@@ -153,8 +161,10 @@ async def agent_stream(websocket: WebSocket):
         city_query        = payload.get("city_query", "").strip()
         temp_offset       = float(payload.get("temp_offset", 0.0))
         precip_multiplier = float(payload.get("precip_multiplier", 1.0))
-    except (asyncio.TimeoutError, Exception):
+    except asyncio.TimeoutError:
         pass
+    except Exception as e:
+        logger.warning("[WS/agent-stream] Failed to parse initial payload: %s", e)
 
     try:
         async for event in run_graph_stream(
@@ -196,8 +206,10 @@ async def multi_city_stream(websocket: WebSocket):
         precip_multiplier = float(payload.get("precip_multiplier", 1.0))
         # 安全校验：最多 8 城市，防止资源滥用
         cities = [str(c).strip() for c in cities if c][:8]
-    except (asyncio.TimeoutError, Exception):
+    except asyncio.TimeoutError:
         pass
+    except Exception as e:
+        logger.warning("[WS/multi-stream] Failed to parse initial payload: %s", e)
 
     try:
         async for event in run_graph_stream_multi(

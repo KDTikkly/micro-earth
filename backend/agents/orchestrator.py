@@ -26,10 +26,30 @@ if hasattr(_sys.stderr, "buffer"):
 # -----------------------------------------------------------------------------
 
 import asyncio
+import concurrent.futures
 import json
 import sys
 import time
-from typing import TypedDict, Annotated, List, Optional, Any
+from typing import TypedDict, Annotated, List, Optional, Any, Coroutine, TypeVar
+
+_T = TypeVar("_T")
+
+# 同步图节点内跑 async 协程用；与 uvicorn 主线程事件循环隔离
+_ASYNC_WORKER_POOL = concurrent.futures.ThreadPoolExecutor(
+    max_workers=4, thread_name_prefix="micro_earth_async"
+)
+
+
+def _run_async_safely(coro: Coroutine[None, None, _T]) -> _T:
+    """
+    在 LangGraph 同步节点内运行 async 协程。若当前线程已有运行中的事件循环
+    （如 uvicorn），直接 asyncio.run() 会失败；在独立工作线程中则安全。
+    """
+
+    def _in_thread() -> _T:
+        return asyncio.run(coro)
+
+    return _ASYNC_WORKER_POOL.submit(_in_thread).result(timeout=30)
 from langgraph.graph import StateGraph, END
 import operator
 
@@ -37,7 +57,7 @@ def _print(*a, **k):
     """UTF-8 safe print：在 Windows GBK 终端下对所有中文字符做 replace 兜底"""
     try:
         print(*a, **{**k, "flush": True})
-    except (UnicodeEncodeError, UnicodeDecodeError):
+    except (UnicodeEncodeError, UnicodeDecodeError, ValueError, OSError):
         safe = " ".join(
             str(x).encode("utf-8", errors="replace").decode("utf-8", errors="replace")
             for x in a
@@ -90,12 +110,12 @@ def node_geocoder(state: AgentState) -> dict:
     try:
         # v9.0: LLM 意图解析（自然语言 -> 城市名）
         # stub 模式下 parse_city_intent 直接返回原始输入，行为不变
-        parsed_city = asyncio.run(parse_city_intent(city))
+        parsed_city = _run_async_safely(parse_city_intent(city))
         if parsed_city and parsed_city != city:
             _print(f"[{ts}] [Geocoder] LLM 解析意图: '{city}' -> '{parsed_city}'")
             city = parsed_city
 
-        lat, lon, name = asyncio.run(geocode(city))
+        lat, lon, name = _run_async_safely(geocode(city))
         log = f"[{ts}] [Geocoder] * '{city}' -> {name} ({lat:.4f}, {lon:.4f})"
         _print(log)
         return {"logs": [log], "region": name, "lat": lat, "lon": lon}
@@ -114,9 +134,9 @@ def node_fetch_data(state: AgentState) -> dict:
     _print(f"[{ts}] [DataRetriever] 请求 Open-Meteo - {region} ({lat:.4f}, {lon:.4f})...")
 
     try:
-        geojson = asyncio.run(fetch_shenzhen_geojson(lat, lon))
+        geojson = _run_async_safely(fetch_shenzhen_geojson(lat, lon))
         feature_count = len(geojson.get("features", []))
-        first_props = geojson["features"][0]["properties"] if geojson["features"] else {}
+        first_props = (geojson["features"][0].get("properties") or {}) if geojson["features"] else {}
         raw = {
             "temperature":   first_props.get("temperature_2m", 25.0),
             "humidity":      60.0,
@@ -131,10 +151,10 @@ def node_fetch_data(state: AgentState) -> dict:
         _print(log1); _print(log2)
 
         # v9.0: LLM 气象摘要分析（stub 模式跳过，不影响现有行为）
-        weather_summary = asyncio.run(analyze_weather({
+        weather_summary = _run_async_safely(analyze_weather({
             "region": region,
             "temperature": raw["temperature"],
-            "precipitation": geojson["features"][0]["properties"].get("precipitation_probability", "--") if geojson["features"] else "--",
+            "precipitation": (geojson["features"][0].get("properties") or {}).get("precipitation_probability", "--") if geojson["features"] else "--",
             "wind_speed": raw["wind_speed"],
             "risk_level": "PENDING",  # 此时 risk 尚未计算，占位
         }))
@@ -368,7 +388,11 @@ async def run_graph_stream(
         "message": f"[{ts}] [Orchestrator] v6.0 工作流启动 - 查询: '{city_query or region}'{wi_str}"
     }
 
-    for graph_event in micro_earth_graph.stream(state):
+    graph_results = await asyncio.to_thread(
+        lambda: list(micro_earth_graph.stream(state))
+    )
+
+    for graph_event in graph_results:
         for node_name, node_output in graph_event.items():
             # 日志推送
             for log_line in node_output.get("logs", []):
@@ -472,15 +496,6 @@ async def run_graph_stream(
                     "data": {"entities": slim_entities, "stats": stats},
                 }
                 await asyncio.sleep(0.15)
-
-                # v7.0: 将物理灾害警告日志作为独立 log 事件推送到前端
-                for evac_log in evac_logs:
-                    yield {
-                        "event": "log",
-                        "node": "EntitySimulator",
-                        "message": evac_log,
-                    }
-                    await asyncio.sleep(0.05)
 
                 for evt in trade_events:
                     action_map = {
