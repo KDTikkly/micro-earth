@@ -459,7 +459,7 @@ function AppInner() {
             letterSpacing: "0.06em", fontWeight: 700,
             border: "1.5px solid #fff", padding: "1px 6px",
           }}>
-            v0.8.0 · v8.0
+            v11.2
           </span>
         </div>
 
@@ -794,7 +794,7 @@ function AppInner() {
         height: 36, flexShrink: 0, padding: "0 16px",
       }}>
         <span style={{ color: "#FFEE00", fontWeight: 700 }}>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · v8.0</span>
+        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · v11.2</span>
         <span style={{ color: geojsonData ? "#00FF00" : "#333", fontWeight: 700 }}>
           {geojsonData ? `[OK] open-meteo.com` : "// NO DATA"}
         </span>

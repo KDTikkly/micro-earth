@@ -93,7 +93,7 @@ export default function ElectronTitleBar() {
           fontSize: 9, color: "#9370DB",
           border: "1px solid #9370DB",
           padding: "1px 5px", letterSpacing: "0.12em",
-        }}>DIGITAL TWIN · v8.0</span>
+        }}>DIGITAL TWIN · v11.2</span>
       </div>
 
       {/* 中：系统标识 */}

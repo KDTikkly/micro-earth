@@ -191,7 +191,7 @@ export default function WhatIfSandbox() {
         <span style={{
           fontFamily: "'Courier New', monospace", fontSize: 9,
           color: "#ffccdd", fontWeight: 700,
-        }}>v5.0</span>
+        }}>v11.2</span>
       </div>
 
       {/* 面板体 — 黑底 */}
