@@ -8,8 +8,8 @@ export const useAgentStore = create((set) => ({
   lon:          114.39,
   geojsonData:  null,     // v2.0: GeoJSON FeatureCollection
   riskData:     null,     // v3.0: 极端天气风险指数
-  entityData:   null,     // v4.0-7: 实体列表 + stats
-  tradeLog:     [],       // v4.0-7: 事件滚动日志（疏散警告 / 旧交易事件）
+  entityData:   null,     // v4.0-7: 实体列表 + stats（含 trail）
+  tradeLog:     [],       // v4.0-7: 事件滚动日志（包含 WARNING/AMM 物理灾害日志）
   assetHistory: [],       // v4.0 旧字段（保留兼容）
   evacuationHistory: [],  // v7.0: 疏散进度历史
   ammPriceHistory: [],    // v8.0: AMM 动态资产价格历史 [{t, price, k}]
@@ -22,7 +22,20 @@ export const useAgentStore = create((set) => ({
     precipMultiplier: 1.0,
   },
 
-  appendLog:    (entry) => set((s) => ({ logs: [...s.logs, entry] })),
+  appendLog:    (entry) => set((s) => {
+    // v7.0: 物理灾害警告日志同步追加到 tradeLog 供 Dashboard 消费
+    const msg = entry.message ?? "";
+    const isWarning = (
+      msg.includes("[WARNING]") ||
+      msg.includes("[AMM]") ||
+      msg.includes("[INFO]") ||
+      (msg.includes("evacuat") && entry.event === "log")
+    );
+    const newTradeLog = isWarning
+      ? [{ ...entry, ts: entry.ts ?? new Date().toLocaleTimeString() }, ...s.tradeLog].slice(0, 50)
+      : s.tradeLog;
+    return { logs: [...s.logs, entry], tradeLog: newTradeLog };
+  }),
   setStatus:    (status) => set({ status }),
   setRegion:    (region) => set({ region }),
   setCoords:    (lat, lon) => set({ lat, lon }),
@@ -69,6 +82,9 @@ export const useAgentStore = create((set) => ({
     heatmapData: null, windfield: null, timelineHour: 0,
   }),
 }));
+
+
+
 
 
 

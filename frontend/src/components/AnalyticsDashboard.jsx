@@ -1,18 +1,15 @@
 ﻿/**
- * AnalyticsDashboard — v9.0  Web3/DeFi Edition
- * Cyber Memphis · Hard Black Border · Drop Shadow
+ * AnalyticsDashboard — v10.0  PHASE 7 SURVIVAL COMMAND TERMINAL
+ * Cyber Memphis · Hard Black Border · Hard Shadow
  *
  * Panels:
- *   1. RISK ANALYTICS          — Risk index + animated alert
- *   2. AMM ASSET PRICE CHART   — Bold solid line chart (霓虹粉 6px)
- *   3. ENTITY STATUS PIE       — High-contrast明黄 / 霓虹粉
- *   4. TX HASH LOG             — Real on-chain hashes (last 50)
- *   5. 24H TEMP BARS           — Legacy temperature bars
+ *   1. RISK ANALYTICS          — Risk index + evacuation alert
+ *   2. DISASTER WARNING LOG    — Physical hazard logs (last 50)
+ *   3. SURVIVAL STATUS BAR     — Danger-zone / Safe-zone real-time counter
+ *   4. ENTITY STATUS PIE       — SAFE / EVACUATING / RESCUED distribution
  */
 import { motion } from "framer-motion";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine,
   PieChart, Pie, Cell,
 } from "recharts";
 import { useAgentStore } from "../store/agentStore";
@@ -23,6 +20,7 @@ const NEON_YELLOW = "#FFE62A";
 const NEON_CYAN   = "#00FFEE";
 const NEON_GREEN  = "#00FF88";
 const NEON_BLUE   = "#00BFFF";
+const NEON_PURPLE = "#BF5FFF";
 const BLACK       = "#000000";
 const WHITE       = "#FFFFFF";
 
@@ -36,10 +34,10 @@ const RISK_COLORS = {
 };
 
 // Pie: 明黄 → 霓虹粉 → 霓虹绿
-const PIE_COLORS  = [NEON_YELLOW, NEON_PINK, NEON_GREEN];
-const PIE_LABELS  = ["SAFE", "EVACUATING", "RESCUED"];
+const PIE_COLORS = [NEON_BLUE, NEON_PINK, NEON_GREEN];
+const PIE_LABELS = ["SAFE", "EVACUATING", "RESCUED"];
 
-// ── Cyber Memphis Card container ──────────────────────────────────────────
+// ── Cyber Memphis Card ────────────────────────────────────────────────────
 function Card({ title, tag, children, accent = NEON_PINK, shadowColor = BLACK, style = {} }) {
   return (
     <div style={{
@@ -49,14 +47,13 @@ function Card({ title, tag, children, accent = NEON_PINK, shadowColor = BLACK, s
       flexShrink: 0,
       ...style,
     }}>
-      {/* Header bar */}
       <div style={{
-        background:    BLACK,
-        borderBottom:  `3px solid ${BLACK}`,
-        padding:       "5px 12px",
-        display:       "flex",
-        alignItems:    "center",
-        justifyContent:"space-between",
+        background:     BLACK,
+        borderBottom:   `3px solid ${BLACK}`,
+        padding:        "5px 12px",
+        display:        "flex",
+        alignItems:     "center",
+        justifyContent: "space-between",
         gap:            8,
       }}>
         <span style={{
@@ -71,9 +68,9 @@ function Card({ title, tag, children, accent = NEON_PINK, shadowColor = BLACK, s
         </span>
         {tag && (
           <span style={{
-            fontFamily: "'Courier New', monospace",
-            fontSize:   9,
-            color:      "#555",
+            fontFamily:    "'Courier New', monospace",
+            fontSize:      9,
+            color:         "#555",
             letterSpacing: "0.05em",
           }}>
             {tag}
@@ -85,65 +82,142 @@ function Card({ title, tag, children, accent = NEON_PINK, shadowColor = BLACK, s
   );
 }
 
-// ── Price label on line chart ─────────────────────────────────────────────
-function PriceTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0].value;
+// ── Survival Progress Bar ─────────────────────────────────────────────────
+function EvacProgressBar({ label, value, total, color, shadow }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <div style={{
-      background:  BLACK,
-      border:      `2px solid ${NEON_PINK}`,
-      padding:     "4px 8px",
-      fontFamily:  "'Courier New', monospace",
-      fontSize:    11,
-      color:       NEON_PINK,
-      boxShadow:   `4px 4px 0 0 ${NEON_PINK}`,
-    }}>
-      {typeof p === "number" ? p.toFixed(4) : "—"} MUSD
+    <div style={{ marginBottom: 10 }}>
+      <div style={{
+        display:        "flex",
+        justifyContent: "space-between",
+        alignItems:     "center",
+        marginBottom:   4,
+      }}>
+        <span style={{
+          fontFamily:    "'Courier New', monospace",
+          fontSize:      10,
+          fontWeight:    900,
+          color:         BLACK,
+          letterSpacing: "0.1em",
+        }}>
+          {label}
+        </span>
+        <span style={{
+          fontFamily: "'Courier New', monospace",
+          fontSize:   13,
+          fontWeight: 900,
+          color:      color,
+          background: BLACK,
+          padding:    "1px 8px",
+          border:     `2px solid ${color}`,
+          boxShadow:  `3px 3px 0 0 ${color}`,
+        }}>
+          {value} <span style={{ fontSize: 9, opacity: 0.7 }}>/ {total}</span>
+        </span>
+      </div>
+      <div style={{
+        height:     14,
+        background: "#e8e8e8",
+        border:     `2.5px solid ${BLACK}`,
+        boxShadow:  `2px 2px 0 0 ${BLACK}`,
+        overflow:   "hidden",
+      }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{
+            height:     "100%",
+            background: color,
+            boxShadow:  `0 0 10px ${shadow ?? color}`,
+          }}
+        />
+      </div>
+      <div style={{
+        fontFamily: "'Courier New', monospace",
+        fontSize:   9,
+        color:      "#888",
+        marginTop:  2,
+        textAlign:  "right",
+      }}>
+        {pct}%
+      </div>
     </div>
   );
 }
 
+// ── Warning log entry classifier ──────────────────────────────────────────
+function logColor(msg = "") {
+  if (msg.includes("[WARNING]") || msg.includes("EVACUATING"))  return "#FF4444";
+  if (msg.includes("[ON-CHAIN]") || msg.includes("ON-CHAIN"))   return NEON_GREEN;
+  if (msg.includes("[SIMULATED]") || msg.includes("SWAP"))      return NEON_CYAN;
+  if (msg.includes("[INFO]") || msg.includes("reached safe"))   return NEON_GREEN;
+  if (msg.includes("[AMM]"))                                      return NEON_YELLOW;
+  return "#CCCCCC";
+}
+
 // ── Main component ────────────────────────────────────────────────────────
 export default function AnalyticsDashboard({ riskData = null, region = "—" }) {
-  const risk     = riskData?.risk_index ?? null;
-  const level    = riskData?.risk_level ?? "UNKNOWN";
-  const summary  = riskData?.summary    ?? "Awaiting simulation data...";
-  const hourly   = riskData?.hourly_temps ?? [];
+  const risk    = riskData?.risk_index ?? null;
+  const level   = riskData?.risk_level ?? "UNKNOWN";
+  const summary = riskData?.summary    ?? "Awaiting simulation data...";
+  const hourly  = riskData?.hourly_temps ?? [];
+
   const isDanger = level === "CRITICAL" || level === "HIGH";
   const colorSet = RISK_COLORS[level] ?? RISK_COLORS.UNKNOWN;
 
-  const maxTemp   = hourly.length ? Math.max(...hourly) : 40;
-  const minTemp   = hourly.length ? Math.min(...hourly) : 0;
-  const tempRange = maxTemp - minTemp || 1;
+  const entityData       = useAgentStore((s) => s.entityData);
+  const tradeLog         = useAgentStore((s) => s.tradeLog);
+  const evacuationHistory = useAgentStore((s) => s.evacuationHistory);
+  const logs             = useAgentStore((s) => s.logs);
 
-  const entityData      = useAgentStore((s) => s.entityData);
-  const ammPriceHistory = useAgentStore((s) => s.ammPriceHistory);
-  const tradeHashLog    = useAgentStore((s) => s.tradeHashLog);
-  const tradeLog        = useAgentStore((s) => s.tradeLog);
   const stats           = entityData?.stats ?? null;
-
   const safeCount       = stats?.safe_count       ?? stats?.normal_count ?? 0;
   const evacuatingCount = stats?.evacuating_count ?? stats?.panic_count  ?? 0;
   const rescuedCount    = stats?.rescued_count    ?? 0;
   const total           = stats?.total_entities   ?? 100;
   const disasterActive  = stats?.disaster_active  ?? false;
-  const chainMode       = (tradeHashLog[0]?.chain_mode) ?? false;
+  const disasterLat     = stats?.disaster_lat     ?? null;
+  const disasterLon     = stats?.disaster_lon     ?? null;
 
-  // ── AMM line chart data ──────────────────────────────────────────────
-  // Pad with flat 50.0 baseline if no trades yet
-  const INITIAL_PRICE = 50.0;
-  const lineData = ammPriceHistory.length > 0
-    ? ammPriceHistory.map((p, i) => ({ i, price: p.price ?? INITIAL_PRICE, t: p.t ?? i }))
-    : Array.from({ length: 16 }, (_, i) => ({ i, price: INITIAL_PRICE, t: i }));
+  // ── Collect disaster warning logs from agent stream ──────────────────
+  const warningLogs = [];
+  // priority: tradeLog evac events (contain WARNING/AMM lines)
+  for (const evt of tradeLog) {
+    if (evt.message && (
+      evt.message.includes("[WARNING]") ||
+      evt.message.includes("[AMM]") ||
+      evt.message.includes("[INFO]")
+    )) {
+      warningLogs.push({ ts: evt.ts, msg: evt.message });
+    }
+  }
+  // also pull from main logs (evac_logs are piped here by orchestrator)
+  for (const l of logs) {
+    if (l.event === "entities" || l.event === "trade") continue;
+    const msg = l.message ?? "";
+    if (
+      msg.includes("[WARNING]") ||
+      msg.includes("[AMM]") ||
+      msg.includes("[INFO]") ||
+      msg.includes("EVACUATING") ||
+      msg.includes("evacuat")
+    ) {
+      warningLogs.push({ ts: l.ts, msg });
+    }
+  }
+  // reverse + deduplicate + limit 50
+  const seen = new Set();
+  const dedupLogs = [];
+  for (const l of [...warningLogs].reverse()) {
+    if (!seen.has(l.msg)) {
+      seen.add(l.msg);
+      dedupLogs.push(l);
+      if (dedupLogs.length >= 50) break;
+    }
+  }
 
-  const currentPrice  = ammPriceHistory.length
-    ? (ammPriceHistory[ammPriceHistory.length - 1].price ?? INITIAL_PRICE)
-    : INITIAL_PRICE;
-  const priceChange   = currentPrice - INITIAL_PRICE;
-  const priceChangePct = ((priceChange / INITIAL_PRICE) * 100).toFixed(2);
-
-  // ── Pie chart data ──────────────────────────────────────────────────
+  // ── Pie chart ────────────────────────────────────────────────────────
   const pieData = [
     { name: "SAFE",       value: Math.max(safeCount, 0) },
     { name: "EVACUATING", value: Math.max(evacuatingCount, 0) },
@@ -217,7 +291,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                 </div>
               </div>
 
-              {/* Risk progress bar */}
+              {/* Risk bar */}
               <div style={{ height: 10, background: "rgba(0,0,0,0.2)", border: `2px solid ${BLACK}`, marginBottom: 7 }}>
                 <motion.div
                   initial={{ width: 0 }}
@@ -226,6 +300,12 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   style={{ height: "100%", background: isDanger ? "#FF0044" : BLACK }}
                 />
               </div>
+
+              {disasterLat != null && (
+                <p style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: colorSet.text, opacity: 0.85, margin: "0 0 4px" }}>
+                  DISASTER: ({disasterLat}, {disasterLon})
+                </p>
+              )}
 
               <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: colorSet.text, opacity: 0.9, lineHeight: 1.5, margin: 0 }}>
                 {summary}
@@ -236,17 +316,17 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   animate={{ opacity: [1, 0.15, 1] }}
                   transition={{ duration: 0.5, repeat: Infinity }}
                   style={{
-                    marginTop:  8,
-                    border:     `3px solid ${BLACK}`,
-                    background: NEON_YELLOW,
-                    boxShadow:  `4px 4px 0 0 ${BLACK}`,
-                    padding:    "5px 0",
-                    textAlign:  "center",
-                    fontFamily: "'Courier New', monospace",
-                    fontWeight: 900,
-                    fontSize:   15,
+                    marginTop:     8,
+                    border:        `3px solid ${BLACK}`,
+                    background:    NEON_YELLOW,
+                    boxShadow:     `4px 4px 0 0 ${BLACK}`,
+                    padding:       "5px 0",
+                    textAlign:     "center",
+                    fontFamily:    "'Courier New', monospace",
+                    fontWeight:    900,
+                    fontSize:      15,
                     letterSpacing: "0.15em",
-                    color:      BLACK,
+                    color:         BLACK,
                   }}
                 >
                   !! EVACUATION ALERT !!
@@ -262,89 +342,140 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
       </Card>
 
       {/* ──────────────────────────────────────────────────────
-          2. AMM ASSET PRICE LINE CHART
+          2. DISASTER WARNING LOG (滚动日志)
       ─────────────────────────────────────────────────────── */}
       <Card
-        title="AMM ASSET PRICE"
-        tag={chainMode ? "ON-CHAIN | HARDHAT" : "SIMULATED | x*y=k"}
-        accent={NEON_PINK}
-        shadowColor={NEON_PINK}
+        title="DISASTER WARNING LOG"
+        tag="LAST 50 EVENTS"
+        accent="#FF4444"
+        shadowColor="#FF4444"
+        style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+      >
+        <div style={{
+          flex:       1,
+          minHeight:  0,
+          overflowY:  "scroll",
+          overflowX:  "hidden",
+          background: "#0a0a0a",
+          padding:    "6px 10px",
+        }}>
+          {dedupLogs.length === 0 && (
+            <p style={{
+              fontFamily:  "'Courier New', monospace",
+              fontSize:    11,
+              color:       "#1a3a1a",
+              margin:      0,
+              fontStyle:   "italic",
+            }}>
+              // awaiting disaster events...
+            </p>
+          )}
+          {dedupLogs.map((l, i) => (
+            <div key={i} style={{ marginBottom: 5, display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <span style={{
+                fontFamily:  "'Courier New', monospace",
+                fontSize:    9,
+                color:       NEON_CYAN,
+                flexShrink:  0,
+                paddingTop:  1,
+              }}>
+                [{l.ts ?? "--:--:--"}]
+              </span>
+              <span style={{
+                fontFamily:  "'Courier New', monospace",
+                fontSize:    10,
+                fontWeight:  700,
+                color:       logColor(l.msg),
+                wordBreak:   "break-all",
+                lineHeight:  1.45,
+              }}>
+                {l.msg}
+              </span>
+            </div>
+          ))}
+
+          {/* fallback: 无日志时，展示 tradeLog 事件 */}
+          {dedupLogs.length === 0 && tradeLog.map((evt, i) => (
+            <div key={i} style={{ marginBottom: 4 }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_CYAN }}>{evt.ts} </span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF4444", fontWeight: 900 }}>
+                [WARNING] Entity #{String(evt.entity_id ?? 0).padStart(3, "0")} {evt.action ?? "EVACUATE"}{" "}
+              </span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_GREEN }}>
+                — status: {evt.status ?? "EVACUATING"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* ──────────────────────────────────────────────────────
+          3. SURVIVAL STATUS — 进度条
+      ─────────────────────────────────────────────────────── */}
+      <Card
+        title="SURVIVAL STATUS"
+        tag={`TOTAL ${total} ENTITIES`}
+        accent={NEON_PURPLE}
+        shadowColor={NEON_PURPLE}
         style={{ flexShrink: 0 }}
       >
-        {/* Price header row */}
-        <div style={{
-          display:        "flex",
-          alignItems:     "center",
-          justifyContent: "space-between",
-          padding:        "6px 12px 0",
-          background:     WHITE,
-        }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 22, fontWeight: 900, color: BLACK, letterSpacing: "-0.02em" }}>
-            {currentPrice.toFixed(4)}
-            <span style={{ fontSize: 10, marginLeft: 4, color: "#666" }}>MUSD/DYNA</span>
-          </span>
-          <span style={{
-            fontFamily: "'Courier New', monospace",
-            fontSize:   11,
-            fontWeight: 900,
-            color:      priceChange < 0 ? "#FF0044" : NEON_GREEN,
-            background: BLACK,
-            padding:    "2px 8px",
-            border:     `2px solid ${priceChange < 0 ? "#FF0044" : NEON_GREEN}`,
-            boxShadow:  `3px 3px 0 0 ${priceChange < 0 ? "#FF0044" : NEON_GREEN}`,
-          }}>
-            {priceChange >= 0 ? "+" : ""}{priceChangePct}%
-          </span>
-        </div>
+        <div style={{ padding: "12px 14px 8px", background: WHITE }}>
+          {/* 危险区滞留 */}
+          <EvacProgressBar
+            label="⚠ IN DANGER ZONE"
+            value={evacuatingCount}
+            total={total}
+            color="#FF0044"
+            shadow="#FF4444"
+          />
+          {/* 已抵达安全区 */}
+          <EvacProgressBar
+            label="✓ REACHED SAFE ZONE"
+            value={rescuedCount}
+            total={total}
+            color={NEON_GREEN}
+            shadow="#00FFAA"
+          />
+          {/* 当前安全静止 */}
+          <EvacProgressBar
+            label="◎ HOLDING POSITION"
+            value={safeCount}
+            total={total}
+            color={NEON_BLUE}
+            shadow="#00DFFF"
+          />
 
-        <div style={{ padding: "4px 4px 8px", background: WHITE }}>
-          <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={lineData} margin={{ top: 6, right: 10, left: -22, bottom: 0 }}>
-              <CartesianGrid stroke="#e0e0e0" strokeWidth={1} strokeDasharray="3 3" />
-              <XAxis dataKey="i" hide />
-              <YAxis
-                tick={{ fontFamily: "'Courier New', monospace", fontSize: 9, fill: BLACK, fontWeight: 700 }}
-                axisLine={{ stroke: BLACK, strokeWidth: 2 }}
-                tickLine={{ stroke: BLACK }}
-                domain={["auto", "auto"]}
-              />
-              {/* Initial price reference line */}
-              <ReferenceLine
-                y={INITIAL_PRICE}
-                stroke={NEON_YELLOW}
-                strokeWidth={2}
-                strokeDasharray="6 3"
-              />
-              <Tooltip content={<PriceTooltip />} />
-              <Line
-                type="linear"
-                dataKey="price"
-                stroke={NEON_PINK}
-                strokeWidth={6}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-
-          {ammPriceHistory.length === 0 && (
-            <p style={{
-              fontFamily: "'Courier New', monospace", fontSize: 10,
-              color: "#bbb", margin: "0 12px 4px", textAlign: "center",
-            }}>
-              // initial price: {INITIAL_PRICE} MUSD/DYNA (10:500 pool)
-            </p>
+          {disasterActive && (
+            <motion.div
+              animate={{ opacity: [1, 0.25, 1] }}
+              transition={{ duration: 0.7, repeat: Infinity }}
+              style={{
+                marginTop:     6,
+                background:    "#FF0044",
+                border:        `3px solid ${BLACK}`,
+                boxShadow:     `4px 4px 0 0 ${BLACK}`,
+                padding:       "4px 0",
+                textAlign:     "center",
+                fontFamily:    "'Courier New', monospace",
+                fontWeight:    900,
+                fontSize:      11,
+                letterSpacing: "0.15em",
+                color:         WHITE,
+              }}
+            >
+              !! {evacuatingCount} ENTITIES IN EMERGENCY EVACUATION
+            </motion.div>
           )}
         </div>
       </Card>
 
       {/* ──────────────────────────────────────────────────────
-          3. ENTITY STATUS PIE CHART
+          4. ENTITY STATUS PIE
       ─────────────────────────────────────────────────────── */}
       {hasPie && (
         <Card
-          title="ENTITY STATUS"
-          tag={`TOTAL ${total}`}
+          title="ENTITY STATUS DIST"
+          tag={`T+${evacuationHistory.length ?? 0} TICKS`}
           accent={NEON_YELLOW}
           shadowColor={NEON_YELLOW}
           style={{ flexShrink: 0 }}
@@ -377,7 +508,8 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
               {pieData.map((d, idx) => (
                 <div key={idx} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
                   <div style={{
-                    width: 14, height: 14,
+                    width:      14,
+                    height:     14,
                     background: PIE_COLORS[idx],
                     border:     `2px solid ${WHITE}`,
                     flexShrink: 0,
@@ -385,13 +517,17 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   }} />
                   <span style={{
                     fontFamily: "'Courier New', monospace",
-                    fontSize:   10, fontWeight: 900, color: WHITE, flex: 1,
+                    fontSize:   10,
+                    fontWeight: 900,
+                    color:      WHITE,
+                    flex:       1,
                   }}>
                     {PIE_LABELS[idx]}
                   </span>
                   <span style={{
                     fontFamily:  "'Courier New', monospace",
-                    fontSize:    14, fontWeight: 900,
+                    fontSize:    14,
+                    fontWeight:  900,
                     color:       PIE_COLORS[idx],
                     textShadow:  `0 0 8px ${PIE_COLORS[idx]}`,
                   }}>
@@ -406,8 +542,11 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   transition={{ duration: 0.6, repeat: Infinity }}
                   style={{
                     fontFamily:    "'Courier New', monospace",
-                    fontSize:      9, color: "#FF0044", fontWeight: 900,
-                    marginTop:     5, letterSpacing: "0.1em",
+                    fontSize:      9,
+                    color:         "#FF0044",
+                    fontWeight:    900,
+                    marginTop:     5,
+                    letterSpacing: "0.1em",
                     background:    NEON_YELLOW,
                     border:        `2px solid #FF0044`,
                     padding:       "2px 6px",
@@ -417,116 +556,6 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   !! DISASTER ACTIVE
                 </motion.div>
               )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* ──────────────────────────────────────────────────────
-          4. TX HASH LOG — real on-chain hashes
-      ─────────────────────────────────────────────────────── */}
-      <Card
-        title="TX HASH LOG"
-        tag="LAST 50 TRADES"
-        accent={NEON_GREEN}
-        shadowColor={NEON_GREEN}
-        style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
-      >
-        <div style={{
-          flex:       1,
-          minHeight:  0,
-          overflowY:  "scroll",
-          overflowX:  "hidden",
-          background: "#000",
-          padding:    "6px 10px",
-        }}>
-          {tradeHashLog.length === 0 && tradeLog.length === 0 && (
-            <p style={{
-              fontFamily: "'Courier New', monospace", fontSize: 11,
-              color: "#1a3a1a", margin: 0, fontStyle: "italic",
-            }}>
-              // awaiting trade events...
-            </p>
-          )}
-
-          {/* Real hash entries */}
-          {tradeHashLog.map((t, i) => (
-            <div key={i} style={{ marginBottom: 4, display: "flex", flexDirection: "column", gap: 1 }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_CYAN,    flexShrink: 0 }}>{t.ts}</span>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_YELLOW,  flexShrink: 0, fontWeight: 900 }}>
-                  #{String(t.entity_id ?? 0).padStart(3, "0")}
-                </span>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_PINK,    flexShrink: 0, fontWeight: 900 }}>
-                  {(t.action ?? "").slice(0, 10)}
-                </span>
-                {t.chain_mode && (
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 8, color: NEON_GREEN, border: `1px solid ${NEON_GREEN}`, padding: "0 3px" }}>
-                    ON-CHAIN
-                  </span>
-                )}
-              </div>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 8, color: NEON_GREEN, wordBreak: "break-all", paddingLeft: 2 }}>
-                {t.hash}
-              </span>
-            </div>
-          ))}
-
-          {/* Fallback: tradeLog without hashes */}
-          {tradeHashLog.length === 0 && tradeLog.map((evt, i) => (
-            <div key={i} style={{ marginBottom: 3 }}>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_CYAN }}>{evt.ts} </span>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_PINK, fontWeight: 900 }}>
-                {evt.action}{" "}
-              </span>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_GREEN }}>
-                #{String(evt.entity_id ?? 0).padStart(3, "0")} {evt.status ?? ""}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* ──────────────────────────────────────────────────────
-          5. 24H TEMP BARS (legacy)
-      ─────────────────────────────────────────────────────── */}
-      {hourly.length > 0 && (
-        <Card
-          title="24H TEMP"
-          tag={`${minTemp}~${maxTemp}C`}
-          accent={NEON_YELLOW}
-          shadowColor={BLACK}
-          style={{ flexShrink: 0 }}
-        >
-          <div style={{ padding: "8px 10px 6px", background: WHITE }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 60 }}>
-              {hourly.map((t, i) => {
-                const pct  = ((t - minTemp) / tempRange) * 100;
-                const barH = Math.max(pct * 0.5, 3);
-                const hot  = t > 32; const cold = t < 10;
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ height: 0 }}
-                    animate={{ height: barH }}
-                    transition={{ duration: 0.4, delay: i * 0.015 }}
-                    title={`${i}:00 - ${t}C`}
-                    style={{
-                      flex: 1, height: barH,
-                      background: hot ? "#FF6B00" : cold ? NEON_CYAN : NEON_YELLOW,
-                      border: `1.5px solid ${BLACK}`,
-                      minWidth: 3,
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-              {[0, 6, 12, 18, 23].map(h => (
-                <span key={h} style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: BLACK, fontWeight: 700 }}>
-                  {String(h).padStart(2, "0")}h
-                </span>
-              ))}
             </div>
           </div>
         </Card>

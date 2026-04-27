@@ -1,21 +1,20 @@
 ﻿# Micro-Earth
 
 > 呐……这个项目，我替你看着呢。
-> **Micro-Earth** — AI 驱动的自主世界动态资产交易枢纽
-> Cyber Memphis Edition · v9.0 · Web3/DeFi Layer
+> **Micro-Earth** — Phase 7 · 多智能体自主疏散 · 物理生存推演 · 高清卫星地表渲染
+> Cyber Memphis Edition · v10.0 · 3D GIS + Survival Command Terminal
 
 <br/>
 
-*——「哼，地球的实时脉搏都在这里，连链上价格都震动起来了——你不来看看的话……才不是因为我想让你来」*
+*——「哼，灾难来临的时候这些实体全都在跑……我早就算到了。你这个指挥官，到底在哪里」*
 
 ---
 
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI%20%2B%20LangGraph-009688?style=flat-square&logo=fastapi)
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
-![Web3](https://img.shields.io/badge/Web3-web3.py%20%2B%20AMM-FF1493?style=flat-square)
-![Map](https://img.shields.io/badge/Map-MapLibre%20Globe-199900?style=flat-square)
-![Phase](https://img.shields.io/badge/Phase-9%20·%20Web3%2FDeFi%20Settlement-FF1493?style=flat-square)
+![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Esri%20Satellite-199900?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-10%20·%20Survival%20Command%20Terminal-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 ---
@@ -24,9 +23,12 @@
 
 嗯……我来解释一下吧，不是因为特别想解释，只是你肯定搞不清楚（哼）。
 
-**Micro-Earth** 是一款 AI 驱动的自主世界动态资产交易枢纽。系统不仅能推演极端天气的物理过程，还能让 Kinetic Entities（动态实体）基于物理环境造成的资产老化，在本地 Hardhat 测试网上进行 AMM 自动化做市商结算。
+**Micro-Earth** 是一款 AI 驱动的多智能体物理生存推演系统。系统接入真实卫星图像、推演极端天气、驱动 100 个 Kinetic Entities 基于逃生向量算法自主撤离，并在赛博孟菲斯风格的指挥终端上实时展现生死状态。
 
-说人话就是：**地球天气的实时镜像 + 链上资产暴跌曲线，全部住在你的浏览器里**。
+说人话就是：**高清卫星地球 + 实体逃生轨迹 + 灾害警告日志 + 撤离进度条，全部住在你的浏览器里**。
+
+
+
 
 ---
 
@@ -40,8 +42,11 @@
 | 🔬 **AI 超分辨率** | IDW 反距离权重插值，12×12 热力矩阵，25km→1km 模拟精度 |
 | 🌊 **洪涝区渲染** | 降水 >= 80% 自动标注电光紫洪涝风险区 |
 | 🎛️ **What-If 灾害沙盘** | 温度偏移 / 降水倍率滑块，实时推演极端天气场景 |
-| 🌐 **3D Globe 视图** | MapLibre Globe 投影 · ESRI 高清卫星影像 |
-| **v9.0** | **Web3/DeFi 链上结算 · DynamicAssetAMM · 实体恐慌抛售 · 价格暴跌曲线** |
+| 🌐 **3D Globe 高清卫星** | MapLibre Globe 投影 · Esri World Imagery 无限放大不糊 |
+| 🏃 **v7.0 多智能体疏散** | 100 个 Kinetic Entities · 逃生向量算法 · 实时坐标位移 |
+| 🎨 **全息实体渲染** | 电光蓝静态点 · 霓虹粉闪烁 · 电光紫渐消尾迹 LineString |
+| 🖥️ **生存状态指挥终端** | 灾害警告日志 + 撤离/安全区实时进度条 + 状态饼图 |
+| ⛓️ **Web3 AMM 层** | Hardhat 本地链 · DynamicAssetAMM.sol · x*y=k 恒定乘积 |
 | 💅 **Cyber Memphis UI** | Courier New 等宽字体 · 高饱和撞色 · 孟菲斯粗黑边框 |
 
 ---
@@ -59,26 +64,26 @@ micro-earth/
 │   └── deployment.json             # 合约地址 + 实体钱包 (deploy 后生成)
 ├── backend/                        # Python FastAPI 后端
 │   ├── agents/
-│   │   ├── orchestrator.py         # LangGraph 智能体图 + AgentState
+│   │   ├── orchestrator.py         # LangGraph 智能体图 + evac_logs 推送
 │   │   ├── geocoder.py             # 城市名 -> 坐标
 │   │   ├── data_retriever.py       # Open-Meteo API 数据获取
 │   │   ├── physics_engine.py       # IDW 超分辨率插值
-│   │   ├── entity_simulator.py     # v9.0 实体疏散 + AMM 恐慌抛售
-│   │   └── chain_amm.py            # v9.0 web3.py 链上 AMM 适配层
+│   │   ├── entity_simulator.py     # v7.0+ 实体疏散 + 逃生向量 + AMM 抛售
+│   │   └── chain_amm.py            # web3.py 链上 AMM 适配层 (graceful degradation)
 │   ├── api/
 │   │   └── main.py                 # FastAPI WebSocket /api/what-if
 │   └── requirements.txt
 └── frontend/                       # React + Vite 前端
     └── src/
         ├── components/
-        │   ├── AnalyticsDashboard.jsx  # v9.0 赛博孟菲斯 Web3 图表面板
+        │   ├── AnalyticsDashboard.jsx  # v10.0 生存状态指挥终端
         │   ├── AgentTerminal.jsx       # 实时 WebSocket 日志终端
         │   ├── BrutalistCard.jsx
         │   └── WhatIfSandbox.jsx       # 灾害沙盘控制台
         ├── map/
-        │   └── EarthMap.jsx            # MapLibre Globe 3D 卫星地球
+        │   └── EarthMap.jsx            # MapLibre Globe + Esri卫星 + EntityCanvas v7.0
         ├── store/
-        │   └── agentStore.js           # Zustand 全局状态
+        │   └── agentStore.js           # Zustand 全局状态 (含 WARNING 日志路由)
         └── App.jsx
 ```
 
@@ -88,28 +93,15 @@ micro-earth/
 
 > ……你要跑起来之前，先确认环境好不好——Node.js >= 18、Python >= 3.10，这点都没有的话我会担心你的。
 
-### 1. 启动 Hardhat 本地测试网（可选，链上模式）
-
-```bash
-cd blockchain
-npm install
-npx hardhat node          # 启动本地链 http://127.0.0.1:8545
-# 新终端:
-npx hardhat run scripts/deploy.js --network localhost
-# 输出 deployment.json，初始价格: 50 MUSD/DYNA (10:500 pool)
-```
-
-### 2. 启动后端
+### 1. 启动后端
 
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn api.main:app --reload --port 8000
-# 运行在 http://localhost:8000
-# 若 Hardhat 节点在线，输出 [ChainAMM] ON-CHAIN mode
 ```
 
-### 3. 启动前端
+### 2. 启动前端
 
 ```bash
 cd frontend
@@ -118,11 +110,21 @@ npm run dev
 # 运行在 http://localhost:5173
 ```
 
+### 3. （可选）启动 Hardhat 本地链
+
+```bash
+cd blockchain
+npm install
+npx hardhat node          # localhost:8545
+npx hardhat run scripts/deploy.js --network localhost
+# 链上模式：实体抛售产生真实 tx_hash
+```
+
 两个都跑起来之后，打开浏览器就好了，剩下的交给我。
 
 ---
 
-## Web3 AMM 架构
+## Phase 7 疏散引擎架构
 
 ```
 极端天气推演
@@ -131,20 +133,24 @@ npm run dev
 风险指数 >= 60  -->  实体进入 EVACUATING 状态
     |
     v
-chain_amm.swap_panic_sell(entity_id, amount)
-    |
-    +-- Hardhat 在线 --> panicSell() on-chain --> 真实 tx_hash
-    |
-    +-- Hardhat 离线 --> 内置 x*y=k 模拟 --> 伪 tx_hash
+逃生向量算法: _evacuation_vector(ent_lat, ent_lon, disaster_lat, disaster_lon)
+    |           远离方向单位向量 + 随机±30° 侧偏 + 速度随危险度线性加快
+    v
+每 tick 更新实体坐标  →  trail[] 追加历史位置（最近8帧）
     |
     v
-AMM 价格因抛压下跌 (恒定乘积滑点)
+MapLibre EntityCanvas v7.0 渲染:
+    SAFE       → 电光蓝静态点 (r=5)
+    EVACUATING → 霓虹粉高频闪烁 (r=7) + 外扩脉冲圈 + 电光紫渐消尾迹 (3.5px)
+    RESCUED    → 霓虹绿点 (r=5.5)
     |
     v
-Analytics Dashboard 实时更新:
-    - AMM ASSET PRICE 折线图 (霓虹粉 6px 粗线) 暴跌
-    - TX HASH LOG 滚动 (链上 hash 标注 [ON-CHAIN])
+右侧指挥终端实时更新:
+    DISASTER WARNING LOG  — [WARNING] N entities initiating emergency evacuation
+    SURVIVAL STATUS       — 危险区/安全区进度条
+    ENTITY STATUS DIST    — 饼图实时占比
 ```
+
 
 **初始流动性：10 DYNA : 500 MUSD => 初始价格 = 50 MUSD/DYNA**
 

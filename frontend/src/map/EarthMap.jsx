@@ -221,7 +221,11 @@ function WindParticleCanvas({ windframe, width, height }) {
   );
 }
 
-/* ── 实体疏散 Canvas ─────────────────────────────────────── */
+/* ── 实体疏散 Canvas v7.0 ────────────────────────────────────
+ *  SAFE       → 电光蓝静态点 (r=5, glow 蓝)
+ *  EVACUATING → 霓虹粉高频闪烁点 (r=7) + 电光紫渐消尾迹 (lw=3.5)
+ *  RESCUED    → 霓虹绿点 (r=5.5)
+ * ─────────────────────────────────────────────────────────── */
 function EntityCanvas({ mapInst, entities, width, height }) {
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
@@ -232,11 +236,12 @@ function EntityCanvas({ mapInst, entities, width, height }) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const draw = () => {
-      tRef.current += 0.04;
+      tRef.current += 0.06;
       ctx.clearRect(0, 0, width, height);
       if (!mapInst || !entities?.length) {
         rafRef.current = requestAnimationFrame(draw); return;
       }
+
       for (const ent of entities) {
         const lat = ent.location?.lat ?? ent.lat;
         const lon = ent.location?.lon ?? ent.lon;
@@ -244,37 +249,74 @@ function EntityCanvas({ mapInst, entities, width, height }) {
         let px;
         try { px = mapInst.project([lon, lat]); } catch { continue; }
         const status = ent.status ?? (ent.st === "PANIC" ? "EVACUATING" : "SAFE");
+
+        // ── 电光紫渐消尾迹（EVACUATING 专属）──
         if (status === "EVACUATING" && ent.trail?.length > 1) {
           const pts = [...ent.trail, { lat, lon }];
           ctx.save();
-          ctx.lineJoin = "round"; ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineCap  = "round";
           for (let i = 1; i < pts.length; i++) {
             let a, b;
             try { a = mapInst.project([pts[i-1].lon, pts[i-1].lat]); } catch { continue; }
             try { b = mapInst.project([pts[i].lon,   pts[i].lat]);   } catch { continue; }
-            ctx.globalAlpha = (i / pts.length) * 0.7;
+            const seg = i / pts.length;
+            ctx.globalAlpha = seg * 0.9;
             ctx.strokeStyle = "#9B30FF";
-            ctx.lineWidth   = 1.5;
-            ctx.shadowColor = "#9B30FF";
-            ctx.shadowBlur  = 4;
-            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            ctx.lineWidth   = 3.5 * seg;
+            ctx.shadowColor = "#BF5FFF";
+            ctx.shadowBlur  = 10;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
           }
           ctx.restore();
         }
+
+        // ── 实体点渲染 ──
         ctx.save();
-        let color, radius, glow;
+        let color, radius, glow, extraRing = false;
         if (status === "EVACUATING") {
-          const blink = 0.5 + 0.5 * Math.sin(tRef.current * 4 + (ent.entity_id||0) * 0.5);
-          color = `rgba(255,20,147,${0.6 + 0.4 * blink})`; radius = 3.5; glow = "#FF1493";
+          const t    = tRef.current;
+          const eid  = ent.entity_id || 0;
+          // 高频闪烁：主 sin + 倍频谐波
+          const blink = 0.5 + 0.35 * Math.sin(t * 6 + eid * 0.7)
+                             + 0.15 * Math.sin(t * 13 + eid * 1.3);
+          color  = `rgba(255,20,147,${Math.min(1, 0.55 + 0.45 * blink)})`;
+          radius = 7;
+          glow   = "#FF1493";
+          extraRing = true;
         } else if (status === "RESCUED") {
-          color = "rgba(0,255,136,0.9)"; radius = 3; glow = "#00FF88";
+          color  = "rgba(0,255,136,0.92)";
+          radius = 5.5;
+          glow   = "#00FF88";
         } else {
-          color = "rgba(0,191,255,0.85)"; radius = 2.5; glow = "#00BFFF";
+          color  = "rgba(0,191,255,0.88)";
+          radius = 5;
+          glow   = "#00BFFF";
         }
+
         ctx.globalAlpha = 1;
-        ctx.shadowColor = glow; ctx.shadowBlur = radius * 2.5;
+        ctx.shadowColor = glow;
+        ctx.shadowBlur  = radius * 3.5;
         ctx.fillStyle   = color;
-        ctx.beginPath(); ctx.arc(px.x, px.y, radius, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px.x, px.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 外圈扩散环（EVACUATING 独有）
+        if (extraRing) {
+          const pulse = 0.5 + 0.5 * Math.sin(tRef.current * 4 + (ent.entity_id||0) * 0.5);
+          ctx.globalAlpha = 0.35 * pulse;
+          ctx.strokeStyle = "#FF69B4";
+          ctx.lineWidth   = 2;
+          ctx.shadowBlur  = 14;
+          ctx.beginPath();
+          ctx.arc(px.x, px.y, radius * 2.2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
         ctx.restore();
       }
       rafRef.current = requestAnimationFrame(draw);

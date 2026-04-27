@@ -443,20 +443,25 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
-            # v4.0: 实体数据推送
+            # v4.0 / v7.0: 实体数据推送 + 疏散警告日志
             if node_output.get("entity_data"):
                 ed = node_output["entity_data"]
                 entities = ed.get("entities", [])
                 trade_events = ed.get("trade_events", [])
+                evac_logs    = ed.get("evac_logs", [])
                 stats = ed.get("stats", {})
 
                 slim_entities = [
                     {
-                        "id":  e["entity_id"],
-                        "lat": e["location"]["lat"],
-                        "lon": e["location"]["lon"],
-                        "val": e["asset_value"],
-                        "st":  e["status"],
+                        "id":         e["entity_id"],
+                        "entity_id":  e["entity_id"],
+                        "lat":        e["location"]["lat"],
+                        "lon":        e["location"]["lon"],
+                        "val":        e["asset_value"],
+                        "st":         e["status"],
+                        "status":     e["status"],
+                        "trail":      e.get("trail", []),
+                        "location":   e["location"],
                     }
                     for e in entities
                 ]
@@ -467,6 +472,15 @@ async def run_graph_stream(
                     "data": {"entities": slim_entities, "stats": stats},
                 }
                 await asyncio.sleep(0.15)
+
+                # v7.0: 将物理灾害警告日志作为独立 log 事件推送到前端
+                for evac_log in evac_logs:
+                    yield {
+                        "event": "log",
+                        "node": "EntitySimulator",
+                        "message": evac_log,
+                    }
+                    await asyncio.sleep(0.05)
 
                 for evt in trade_events:
                     action_map = {
