@@ -819,9 +819,9 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         onToggle={handleBoundaryToggle}
       />
 
-      {/* 地图源切换面板 zIndex:700 · 右侧 FETCH 下方 */}
+      {/* 地图源切换面板 zIndex:750 · 右侧避开 FETCH(top:8) 和洪涝徽章(top:44) */}
       <div style={{
-        position:"absolute", top:44, right:8, zIndex:700,
+        position:"absolute", top:90, right:8, zIndex:750,
         display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4,
       }}>
         {/* 探测状态提示 */}
