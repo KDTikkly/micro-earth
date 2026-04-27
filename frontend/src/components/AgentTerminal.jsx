@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAgentStore } from "../store/agentStore";
+import { WS_BASE } from "../utils/wsConfig";
 
 const NODE_COLORS = {
   FetchData:      "#00FF00",
@@ -40,7 +41,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
     clearLogs();
     setStatus("CONNECTING");
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/agent-stream`);
+    const ws = new WebSocket(`${WS_BASE}/ws/agent-stream`);
     wsRef.current = ws;
 
     ws.onopen = () => {

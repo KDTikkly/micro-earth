@@ -35,6 +35,16 @@ DANGER_RADIUS_DEG         = 0.25 # 灾害中心半径（度），约 25km
 SAFE_RADIUS_DEG           = 0.55 # 抵达此距离视为安全
 EVAC_SPEED_DEG            = 0.003  # 每 tick 最大位移（约 300m）
 
+# -- 灾害类型 & 强度配置 --------------------------------------------------------
+_DISASTER_TYPES = [
+    ("Hurricane",    "CAT-4 sustained winds >{wspd}kt. Eye wall approaching."),
+    ("Typhoon",      "Super typhoon, max wind >{wspd}kt. Immediate evacuation required."),
+    ("Flash Flood",  "Flood depth >{depth}m. Infrastructure compromised."),
+    ("Wildfire",     "Fire perimeter expanding at {rate}km/h. Air quality HAZARDOUS."),
+    ("Tornado",      "EF-{ef} tornado on ground. Debris field radius {rad}km."),
+    ("Cyclone",      "Tropical cyclone Vcat-{vcat}, pressure {pres}hPa."),
+]
+
 # -- v8.0 AMM 初始流动性 -------------------------------------------------------
 AMM_INITIAL_ASSET   = 10.0    # 初始 DynAsset 储量
 AMM_INITIAL_STABLE  = 500.0   # 初始 Stablecoin 储量
@@ -226,11 +236,34 @@ def simulate_entities(
     # -- v8.0: AMM 抛售 + 交易事件生成 -----------------------------------------
     ts = time.strftime("%H:%M:%S")
     if newly_evacuating:
+        # 随机选择灾害类型并生成逼真的警告文案
+        dtype, dtmpl = random.choice(_DISASTER_TYPES)
+        detail = dtmpl.format(
+            wspd=random.randint(105, 165),
+            depth=round(random.uniform(1.5, 4.2), 1),
+            rate=round(random.uniform(8, 28), 1),
+            ef=random.randint(3, 5),
+            rad=round(random.uniform(0.5, 3.2), 1),
+            vcat=random.randint(4, 5),
+            pres=random.randint(890, 940),
+        )
+        risk_pct = min(100, round(risk_index * 1.15))
         evac_log = (
-            f"[{ts}] [WARNING] Disaster approaching ({disaster_lat:.3f}, {disaster_lon:.3f}). "
-            f"{len(newly_evacuating)} entities initiating emergency evacuation protocols."
+            f"[{ts}] [WARNING] {dtype} approaching coordinates "
+            f"({disaster_lat:.3f}, {disaster_lon:.3f}). "
+            f"{detail} "
+            f"{len(newly_evacuating)} entities initiating emergency evacuation protocols. "
+            f"[RISK:{risk_pct}/100]"
         )
         evac_logs.append(evac_log)
+
+        # 二级警告：倒计时 & 辐射半径扩展
+        impact_min = random.randint(8, 35)
+        evac_logs.append(
+            f"[{ts}] [CRITICAL] Estimated impact in T-{impact_min} minutes. "
+            f"Danger radius expanding: {round(DANGER_RADIUS_DEG * 111, 1)}km. "
+            f"Emergency broadcast active on all channels."
+        )
 
         cam = _get_chain_amm()
         for eid in newly_evacuating[:10]:
@@ -280,7 +313,9 @@ def simulate_entities(
     if rescued_count > 0 and tick % 3 == 0:
         evac_logs.append(
             f"[{ts}] [INFO] {rescued_count} entities reached safe zones. "
-            f"{evacuating_count} still evacuating. AMM Price: {amm_price():.2f}"
+            f"{evacuating_count} still evacuating. "
+            f"Disaster center: ({disaster_lat:.3f}, {disaster_lon:.3f}). "
+            f"AMM Price: {amm_price():.2f} | Danger zone density: {evacuating_count}/{len(entities)} entities."
         )
 
     stats = {

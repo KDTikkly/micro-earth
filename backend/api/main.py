@@ -1,8 +1,9 @@
 ﻿"""
-Micro-Earth FastAPI 主应用 - v6.0
+Micro-Earth FastAPI 主应用 - v10.0
 - GET  /health              健康检查
 - POST /api/what-if         What-If 环境干预（返回重新推演结果）
-- WS   /ws/agent-stream     WebSocket 实时推流（日志 + GeoJSON + heatmap + windfield）
+- WS   /ws/agent-stream     WebSocket 实时推流（单城市）
+- WS   /ws/multi-stream     WebSocket 并发多城市推流（v10.0 新增）
 """
 import asyncio
 import json
@@ -45,10 +46,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from agents.orchestrator import run_graph_stream
+from agents.orchestrator import run_graph_stream, run_graph_stream_multi
 from agents.llm_adapter import get_backend_info
 
-app = FastAPI(title="Micro-Earth API", version="0.6.0")
+app = FastAPI(title="Micro-Earth API", version="0.10.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -166,6 +167,49 @@ async def agent_stream(websocket: WebSocket):
         await websocket.close()
     except WebSocketDisconnect:
         print("[WS] 客户端断开连接", flush=True)
+    except Exception as e:
+        try:
+            await websocket.send_text(json.dumps({"event": "error", "message": str(e)}, ensure_ascii=False))
+        except Exception:
+            pass
+
+
+# ── v10.0: 多城市并发 WebSocket 端点 ─────────────────────────────────────
+@app.websocket("/ws/multi-stream")
+async def multi_city_stream(websocket: WebSocket):
+    """
+    v10.0 并发多城市推流端点。
+    客户端发送 JSON: { "cities": ["深圳", "北京", "东京", ...], "temp_offset": 0, "precip_multiplier": 1 }
+    服务端 asyncio.gather 并发推演，所有事件携带 city_key 字段流式推送。
+    """
+    await websocket.accept()
+
+    cities: list = ["深圳", "北京", "上海"]
+    temp_offset = 0.0
+    precip_multiplier = 1.0
+
+    try:
+        raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+        payload = json.loads(raw)
+        cities            = payload.get("cities", cities)
+        temp_offset       = float(payload.get("temp_offset", 0.0))
+        precip_multiplier = float(payload.get("precip_multiplier", 1.0))
+        # 安全校验：最多 8 城市，防止资源滥用
+        cities = [str(c).strip() for c in cities if c][:8]
+    except (asyncio.TimeoutError, Exception):
+        pass
+
+    try:
+        async for event in run_graph_stream_multi(
+            cities,
+            temp_offset=temp_offset,
+            precip_multiplier=precip_multiplier,
+        ):
+            await websocket.send_text(json.dumps(event, ensure_ascii=False))
+            await asyncio.sleep(0)
+        await websocket.close()
+    except WebSocketDisconnect:
+        print("[WS/multi] 客户端断开连接", flush=True)
     except Exception as e:
         try:
             await websocket.send_text(json.dumps({"event": "error", "message": str(e)}, ensure_ascii=False))

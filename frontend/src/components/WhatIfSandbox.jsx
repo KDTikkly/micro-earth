@@ -5,6 +5,7 @@
  */
 import { useState, useCallback, useRef } from "react";
 import { useAgentStore } from "../store/agentStore";
+import { HTTP_BASE } from "../utils/wsConfig";
 
 // ── 自定义粗犷滑块 ──────────────────────────────────────────────────────────
 function MemphasSlider({ label, value, min, max, step, unit, accentColor, onChange }) {
@@ -107,7 +108,7 @@ export default function WhatIfSandbox() {
     });
 
     try {
-      const res = await fetch("http://localhost:8000/api/what-if", {
+      const res = await fetch(`${HTTP_BASE}/api/what-if`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

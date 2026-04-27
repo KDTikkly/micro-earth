@@ -1,11 +1,11 @@
 ﻿"""
-Micro-Earth Orchestrator - v6.0
+Micro-Earth Orchestrator - v10.0
 LangGraph StateGraph:
   Input -> Geocoder -> DataRetriever -> PhysicsEngine -> EntitySimulator -> Output
-v6.0 新增：
-  - DataRetriever 获取 72h 风速/风向数据
-  - PhysicsEngine 计算矢量场（U/V 分量）
-  - windfield 事件推送 72h 风场时序到前端
+v10.0 新增：
+  - run_graph_stream_multi：asyncio.gather 并发多城市独立沙盒推演
+  - 每个城市事件携带 city_key 标识，前端按城市路由
+  - 单城市 run_graph_stream 保持兼容
 """
 # -- UTF-8 编码保障（防 Windows GBK 报错）--------------------------------------
 import os as _os
@@ -516,6 +516,83 @@ async def run_graph_stream(
 
     ts = time.strftime("%H:%M:%S")
     yield {"event": "done", "message": f"[{ts}] [Orchestrator] v6.0 所有节点执行完毕 *"}
+
+
+async def run_single_city_events(city: str, temp_offset: float = 0.0, precip_multiplier: float = 1.0) -> list:
+    """
+    v10.0: 在独立沙盒中运行单城市推演，收集所有事件后返回。
+    事件列表中每个 dict 带 city_key 字段，供并发合并使用。
+    """
+    events = []
+    try:
+        async for evt in run_graph_stream(
+            region=city,
+            city_query=city,
+            temp_offset=temp_offset,
+            precip_multiplier=precip_multiplier,
+        ):
+            # 每个事件注入城市标识
+            evt["city_key"] = city
+            events.append(evt)
+    except Exception as e:
+        events.append({
+            "event": "error",
+            "city_key": city,
+            "message": f"[{time.strftime('%H:%M:%S')}] [{city}] 推演异常: {e}",
+        })
+    return events
+
+
+async def run_graph_stream_multi(
+    cities: list,
+    temp_offset: float = 0.0,
+    precip_multiplier: float = 1.0,
+):
+    """
+    v10.0: asyncio.gather 并发多城市推演。
+    - 每个城市在独立沙盒（独立 LangGraph state）中并行运算
+    - 事件按城市顺序交错 yield，每个事件携带 city_key
+    - WebSocket 消费端可按 city_key 路由到对应城市状态槽
+    """
+    ts = time.strftime("%H:%M:%S")
+    city_list_str = ", ".join(cities)
+    yield {
+        "event": "multi_start",
+        "city_keys": cities,
+        "message": (
+            f"[{ts}] [Orchestrator·v10] CONCURRENT SIMULATION LAUNCH — "
+            f"{len(cities)} cities: [{city_list_str}]"
+        ),
+    }
+
+    # 并发执行所有城市推演（独立沙盒，asyncio.gather）
+    tasks = [
+        run_single_city_events(city, temp_offset, precip_multiplier)
+        for city in cities
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=False)
+
+    # 将各城市事件列表交错推送（按城市轮询，保证流式感）
+    max_len = max((len(r) for r in results), default=0)
+    for i in range(max_len):
+        for city_events in results:
+            if i < len(city_events):
+                yield city_events[i]
+                await asyncio.sleep(0)
+
+    ts = time.strftime("%H:%M:%S")
+    city_summary = " | ".join(
+        f"{cities[idx]}: {len(results[idx])} events"
+        for idx in range(len(cities))
+    )
+    yield {
+        "event": "multi_done",
+        "city_keys": cities,
+        "message": (
+            f"[{ts}] [Orchestrator·v10] ALL CONCURRENT SIMULATIONS COMPLETE — "
+            f"{city_summary}"
+        ),
+    }
 
 
 if __name__ == "__main__":

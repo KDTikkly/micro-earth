@@ -3,6 +3,23 @@
 /* ── 全局重置 ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Electron 桌面端适配 ─────────────────────────────────── */
+/* 隐藏所有系统滚动条 */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #0a0514; }
+::-webkit-scrollbar-thumb { background: #9370DB; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #FF69B4; }
+
+/* Electron 自定义标题栏占位：当 .electron-mode 类挂载时，顶部留 40px */
+body.electron-mode { padding-top: 40px; }
+body.electron-mode header { top: 40px; }
+
+/* 标题栏心跳动画 */
+@keyframes titlebarPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.8); }
+}
+
 :root {
   --paper-white:   #FDFDFD;
   --ink-black:     #1A1A1A;

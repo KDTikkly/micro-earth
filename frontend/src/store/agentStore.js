@@ -22,17 +22,25 @@ export const useAgentStore = create((set) => ({
     precipMultiplier: 1.0,
   },
 
+  // v10.0: 多城市并发状态
+  activeCityKey:   null,    // 当前锁定城市（雷达点击后设置）
+  flyToCityFn:     null,    // EarthMap 注入的 flyTo 回调函数（ref 型）
+
+  // v10.0: 飞行到城市（由 MultiCityRadar 调用）
+  flyToCity: null,          // 由 EarthMap.registerFlyTo() 注入实现
+
   appendLog:    (entry) => set((s) => {
     // v7.0: 物理灾害警告日志同步追加到 tradeLog 供 Dashboard 消费
     const msg = entry.message ?? "";
     const isWarning = (
       msg.includes("[WARNING]") ||
+      msg.includes("[CRITICAL]") ||
       msg.includes("[AMM]") ||
       msg.includes("[INFO]") ||
       (msg.includes("evacuat") && entry.event === "log")
     );
     const newTradeLog = isWarning
-      ? [{ ...entry, ts: entry.ts ?? new Date().toLocaleTimeString() }, ...s.tradeLog].slice(0, 50)
+      ? [{ ...entry, ts: entry.ts ?? new Date().toLocaleTimeString() }, ...s.tradeLog].slice(0, 80)
       : s.tradeLog;
     return { logs: [...s.logs, entry], tradeLog: newTradeLog };
   }),
@@ -75,6 +83,12 @@ export const useAgentStore = create((set) => ({
       tradeHashLog: hashEntry,
     };
   }),
+
+  // v10.0: 多城市并发控制
+  setActiveCityKey: (key) => set({ activeCityKey: key }),
+  // EarthMap 挂载时注入 flyTo 实现，MultiCityRadar 直接调用
+  registerFlyTo: (fn) => set({ flyToCity: fn }),
+
   clearLogs: () => set({
     logs: [], status: "IDLE", geojsonData: null, riskData: null,
     entityData: null, tradeLog: [], assetHistory: [], evacuationHistory: [],
@@ -82,6 +96,9 @@ export const useAgentStore = create((set) => ({
     heatmapData: null, windfield: null, timelineHour: 0,
   }),
 }));
+
+
+
 
 
 

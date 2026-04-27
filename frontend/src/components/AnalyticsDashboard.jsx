@@ -148,12 +148,13 @@ function EvacProgressBar({ label, value, total, color, shadow }) {
 
 // ── Warning log entry classifier ──────────────────────────────────────────
 function logColor(msg = "") {
-  if (msg.includes("[WARNING]") || msg.includes("EVACUATING"))  return "#FF4444";
-  if (msg.includes("[ON-CHAIN]") || msg.includes("ON-CHAIN"))   return NEON_GREEN;
-  if (msg.includes("[SIMULATED]") || msg.includes("SWAP"))      return NEON_CYAN;
-  if (msg.includes("[INFO]") || msg.includes("reached safe"))   return NEON_GREEN;
-  if (msg.includes("[AMM]"))                                      return NEON_YELLOW;
-  return "#CCCCCC";
+  if (msg.includes("[CRITICAL]") || msg.includes("Danger radius") || msg.includes("Emergency broadcast")) return "#CC4400";
+  if (msg.includes("[WARNING]") || msg.includes("EVACUATING"))  return "#CC1111";
+  if (msg.includes("[ON-CHAIN]") || msg.includes("ON-CHAIN"))   return "#007744";
+  if (msg.includes("[SIMULATED]") || msg.includes("SWAP"))      return "#007788";
+  if (msg.includes("[INFO]") || msg.includes("reached safe"))   return "#007744";
+  if (msg.includes("[AMM]"))                                      return "#886600";
+  return "#333333";
 }
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -186,6 +187,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
   for (const evt of tradeLog) {
     if (evt.message && (
       evt.message.includes("[WARNING]") ||
+      evt.message.includes("[CRITICAL]") ||
       evt.message.includes("[AMM]") ||
       evt.message.includes("[INFO]")
     )) {
@@ -198,10 +200,13 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
     const msg = l.message ?? "";
     if (
       msg.includes("[WARNING]") ||
+      msg.includes("[CRITICAL]") ||
       msg.includes("[AMM]") ||
       msg.includes("[INFO]") ||
       msg.includes("EVACUATING") ||
-      msg.includes("evacuat")
+      msg.includes("evacuat") ||
+      msg.includes("Danger radius") ||
+      msg.includes("Emergency broadcast")
     ) {
       warningLogs.push({ ts: l.ts, msg });
     }
@@ -356,14 +361,14 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
           minHeight:  0,
           overflowY:  "scroll",
           overflowX:  "hidden",
-          background: "#0a0a0a",
+          background: "#FFFFFF",
           padding:    "6px 10px",
         }}>
           {dedupLogs.length === 0 && (
             <p style={{
               fontFamily:  "'Courier New', monospace",
               fontSize:    11,
-              color:       "#1a3a1a",
+              color:       "#aaaaaa",
               margin:      0,
               fontStyle:   "italic",
             }}>
@@ -375,7 +380,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
               <span style={{
                 fontFamily:  "'Courier New', monospace",
                 fontSize:    9,
-                color:       NEON_CYAN,
+                color:       "#FF69B4",
                 flexShrink:  0,
                 paddingTop:  1,
               }}>
@@ -397,11 +402,11 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
           {/* fallback: 无日志时，展示 tradeLog 事件 */}
           {dedupLogs.length === 0 && tradeLog.map((evt, i) => (
             <div key={i} style={{ marginBottom: 4 }}>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_CYAN }}>{evt.ts} </span>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF4444", fontWeight: 900 }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF69B4" }}>{evt.ts} </span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#CC1111", fontWeight: 900 }}>
                 [WARNING] Entity #{String(evt.entity_id ?? 0).padStart(3, "0")} {evt.action ?? "EVACUATE"}{" "}
               </span>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: NEON_GREEN }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#007744" }}>
                 — status: {evt.status ?? "EVACUATING"}
               </span>
             </div>
@@ -422,7 +427,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
         <div style={{ padding: "12px 14px 8px", background: WHITE }}>
           {/* 危险区滞留 */}
           <EvacProgressBar
-            label="⚠ IN DANGER ZONE"
+            label="[!] IN DANGER ZONE"
             value={evacuatingCount}
             total={total}
             color="#FF0044"
@@ -430,7 +435,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
           />
           {/* 已抵达安全区 */}
           <EvacProgressBar
-            label="✓ REACHED SAFE ZONE"
+            label="[OK] REACHED SAFE ZONE"
             value={rescuedCount}
             total={total}
             color={NEON_GREEN}
@@ -438,7 +443,7 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
           />
           {/* 当前安全静止 */}
           <EvacProgressBar
-            label="◎ HOLDING POSITION"
+            label="[~] HOLDING POSITION"
             value={safeCount}
             total={total}
             color={NEON_BLUE}

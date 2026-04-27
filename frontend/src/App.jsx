@@ -1,5 +1,6 @@
 ﻿import "./index.css";
 import { useState, useEffect, useRef, Component } from "react";
+import ElectronTitleBar from "./components/ElectronTitleBar";
 import { motion } from "framer-motion";
 
 /* ── ErrorBoundary — 防止子组件崩溃导致白屏 ── */
@@ -399,6 +400,13 @@ export default function App() {
 
 function AppInner() {
   const { region, lat, lon, setRegion, setCoords, geojsonData, riskData, status } = useAgentStore();
+  const isElectron = typeof window !== "undefined" && !!window.electronAPI;
+
+  // Electron 模式：给 body 挂 electron-mode 类，触发 padding-top 留出标题栏空间
+  useEffect(() => {
+    if (isElectron) document.body.classList.add('electron-mode');
+    return () => document.body.classList.remove('electron-mode');
+  }, [isElectron]);
 
   const handleRegionChange = (e) => {
     const found = REGIONS.find((r) => r.label === e.target.value);
@@ -425,6 +433,8 @@ function AppInner() {
       backgroundImage: "linear-gradient(to right, #e8e8e8 1px, transparent 1px), linear-gradient(to bottom, #e8e8e8 1px, transparent 1px)",
       backgroundSize: "40px 40px",
     }}>
+      {/* Electron 自定义标题栏（仅桌面端显示） */}
+      <ElectronTitleBar />
       <FloatingDecorations />
 
       {/* ── 顶部导航 — 霓虹粉底 ── */}

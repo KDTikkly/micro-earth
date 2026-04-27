@@ -15,6 +15,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useAgentStore } from "../store/agentStore";
+import { WS_BASE } from "../utils/wsConfig";
 
 /* ── 城市坐标 ─────────────────────────────────────────────── */
 const CITY_COORDS = {
@@ -221,12 +222,13 @@ function WindParticleCanvas({ windframe, width, height }) {
   );
 }
 
-/* ── 实体疏散 Canvas v7.0 ────────────────────────────────────
+/* ── 实体疏散 Canvas v7.1 ────────────────────────────────────
  *  SAFE       → 电光蓝静态点 (r=5, glow 蓝)
  *  EVACUATING → 霓虹粉高频闪烁点 (r=7) + 电光紫渐消尾迹 (lw=3.5)
  *  RESCUED    → 霓虹绿点 (r=5.5)
+ *  DISASTER   → 红色脉冲扩散圈（灾害中心标注）
  * ─────────────────────────────────────────────────────────── */
-function EntityCanvas({ mapInst, entities, width, height }) {
+function EntityCanvas({ mapInst, entities, disasterLat, disasterLon, disasterActive, width, height }) {
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
   const tRef      = useRef(0);
@@ -238,7 +240,54 @@ function EntityCanvas({ mapInst, entities, width, height }) {
     const draw = () => {
       tRef.current += 0.06;
       ctx.clearRect(0, 0, width, height);
-      if (!mapInst || !entities?.length) {
+      if (!mapInst) {
+        rafRef.current = requestAnimationFrame(draw); return;
+      }
+
+      // ── 灾害中心脉冲圈（最底层先画）──
+      if (disasterActive && disasterLat != null && disasterLon != null) {
+        let dPx;
+        try { dPx = mapInst.project([disasterLon, disasterLat]); } catch { dPx = null; }
+        if (dPx) {
+          const t = tRef.current;
+          // 3 个相位不同的扩散圈
+          for (let k = 0; k < 3; k++) {
+            const phase = (t * 0.8 + k * (Math.PI * 2 / 3)) % (Math.PI * 2);
+            const expandR = 18 + 60 * ((phase / (Math.PI * 2)));
+            const alpha   = 0.7 * (1 - phase / (Math.PI * 2));
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = "#FF0033";
+            ctx.lineWidth   = 2.5 - k * 0.5;
+            ctx.shadowColor = "#FF3300";
+            ctx.shadowBlur  = 20;
+            ctx.beginPath();
+            ctx.arc(dPx.x, dPx.y, expandR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          // 中心点
+          ctx.save();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle   = "#FF0033";
+          ctx.shadowColor = "#FF6600";
+          ctx.shadowBlur  = 20;
+          ctx.beginPath();
+          ctx.arc(dPx.x, dPx.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          // 十字瞄准线
+          ctx.globalAlpha = 0.8;
+          ctx.strokeStyle = "#FF0033";
+          ctx.lineWidth   = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(dPx.x - 18, dPx.y); ctx.lineTo(dPx.x + 18, dPx.y);
+          ctx.moveTo(dPx.x, dPx.y - 18); ctx.lineTo(dPx.x, dPx.y + 18);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      if (!entities?.length) {
         rafRef.current = requestAnimationFrame(draw); return;
       }
 
@@ -324,7 +373,7 @@ function EntityCanvas({ mapInst, entities, width, height }) {
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entities, width, height, mapInst]);
+  }, [entities, width, height, mapInst, disasterLat, disasterLon, disasterActive]);
 
   if (width <= 0 || height <= 0) return null;
   return (
@@ -384,19 +433,48 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         sources: {
           "esri-sat": {
             type:  "raster",
-            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-            tileSize:    256,
-            attribution: "Esri",
-            maxzoom:     19,
+            // 优先请求 512px 高清瓦片（@2x 原生支持），彻底消除放大像素化
+            tiles: [
+              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            ],
+            tileSize:    512,
+            attribution: "© Esri · Maxar · GeoEye · Earthstar Geographics",
+            maxzoom:     23,
+          },
+          // 叠加 Esri World Reference 标注图层（道路/地名，不影响卫星底图清晰度）
+          "esri-labels": {
+            type:  "raster",
+            tiles: [
+              "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+            ],
+            tileSize: 512,
+            maxzoom:  22,
           },
         },
-        layers: [{
-          id:      "esri-sat-layer",
-          type:    "raster",
-          source:  "esri-sat",
-          minzoom: 0,
-          maxzoom: 22,
-        }],
+        layers: [
+          {
+            id:      "esri-sat-layer",
+            type:    "raster",
+            source:  "esri-sat",
+            minzoom: 0,
+            maxzoom: 24,
+            paint: {
+              // linear 双线性插值：放大时平滑锐利，彻底消除马赛克像素化
+              "raster-resampling": "linear",
+              "raster-saturation": 0.2,    // 增强地表色彩饱和度
+              "raster-contrast":   0.12,
+              "raster-brightness-min": 0.05,
+            },
+          },
+          {
+            id:      "esri-labels-layer",
+            type:    "raster",
+            source:  "esri-labels",
+            minzoom: 4,
+            maxzoom: 24,
+            paint: { "raster-opacity": 0.65 },
+          },
+        ],
         glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       },
       center,
@@ -502,7 +580,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     setStatus("CONNECTING");
-    const ws = new WebSocket("ws://localhost:8000/ws/agent-stream");
+    const ws = new WebSocket(`${WS_BASE}/ws/agent-stream`);
     wsRef.current = ws;
     ws.onopen = () => {
       setStatus("RUNNING");
@@ -542,6 +620,10 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const heatmapData      = useAgentStore(s => s.heatmapData);
   const floodCount       = heatmapData?.flood_zones?.length ?? 0;
   const currentWindFrame = windfield?.hourly_vectors?.[timelineHour] ?? null;
+  const entityStats      = entityData?.stats ?? null;
+  const disasterActive   = entityStats?.disaster_active ?? false;
+  const disasterLat      = entityStats?.disaster_lat ?? null;
+  const disasterLon      = entityStats?.disaster_lon ?? null;
 
   /* ── isMounted 防护：DOM 未就绪时返回占位，避免 WebGL 崩溃 ── */
   if (!isMounted) {
@@ -587,6 +669,9 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         <EntityCanvas
           mapInst={mapInst}
           entities={entityData.entities}
+          disasterLat={disasterLat}
+          disasterLon={disasterLon}
+          disasterActive={disasterActive}
           width={dimensions.w}
           height={dimensions.h}
         />
