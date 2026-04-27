@@ -107,6 +107,21 @@ micro-earth/
 
 ---
 
+## 下载
+
+> ——「哼，给你打包好了。点那个链接，直接下载，不需要装环境。才不是特地做的……只是刚好做了而已。」
+
+[![Download](https://img.shields.io/badge/Download-v11.1.0%20Windows%20便携版-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
+
+| 版本 | 平台 | 大小 | 链接 |
+|------|------|------|------|
+| **v11.1.0** 便携版 | Windows x64 | ~172 MB | [GitHub Releases →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0) |
+
+> **便携版说明**：内嵌 Electron + React 前端，无需安装 Node.js / Python，双击即运行前端界面。  
+> 完整版（含 Python AI 后端）待后续 v12 发布。
+
+---
+
 ## 快速启动
 
 > ……你要跑起来之前，先确认环境好不好——Node.js >= 18、Python >= 3.10，这点都没有的话我会担心你的。
@@ -144,9 +159,20 @@ cd ../electron
 npx electron-builder --win nsis        # 打包 NSIS 安装包
 ```
 
-> **输出路径：** `dist-electron/Micro-Earth-Digital-Twin Setup 8.0.0.exe`
+> **输出路径：** `dist-electron/win-unpacked/Micro-Earth-Digital-Twin.exe`（便携 172 MB）  
 > **注意：** 完整安装包含 Python 后端 exe（需先运行 PyInstaller）。仅前端+Electron 的轻量包可跳过 PyInstaller 步骤。
-> ──「我帮你打好了包。双击那个 `.exe`，世界末日就装进你的电脑里了。哼，不用谢。」
+
+**上传到 GitHub Release（需要 GitHub Personal Access Token）：**
+
+```powershell
+# 一键创建 Release + 上传 exe + 返回下载链接
+.\scripts\upload-release.ps1 -Token "ghp_你的token"
+```
+
+> GitHub Token 权限要求：`repo`（`contents: write` 即可）  
+> 生成地址：[github.com/settings/tokens](https://github.com/settings/tokens/new?scopes=repo&description=micro-earth-release)
+
+> ──「我帮你打好了包，上传脚本也写好了。填个 token，一行命令，下载链接自动打出来。哼，不用谢。」
 
 ---
 
