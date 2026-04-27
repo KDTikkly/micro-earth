@@ -1,14 +1,46 @@
 import "./index.css";
-import { lazy, Suspense, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Component } from "react";
 import { motion } from "framer-motion";
+
+/* ── ErrorBoundary — 防止子组件崩溃导致白屏 ── */
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("[ErrorBoundary]", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          height: "100%", background: "#0a0a0a", fontFamily: "'Courier New', monospace", padding: 16,
+        }}>
+          <div style={{ color: "#FF0055", fontWeight: 900, fontSize: 13, letterSpacing: "0.1em", marginBottom: 8 }}>
+            ◈ MAP ENGINE ERROR
+          </div>
+          <div style={{ color: "#555", fontSize: 11, textAlign: "center", maxWidth: 240 }}>
+            {String(this.state.error?.message ?? "Unknown error")}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{
+              marginTop: 12, background: "#FFEE00", border: "2.5px solid #000",
+              fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 12,
+              padding: "4px 14px", cursor: "pointer",
+            }}
+          >↺ RETRY</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import BrutalistCard from "./components/BrutalistCard";
 import AgentTerminal from "./components/AgentTerminal";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import WhatIfSandbox from "./components/WhatIfSandbox";
 import { useAgentStore } from "./store/agentStore";
 import lyriaImg from "./assets/lyria-reverie.png";
-
-const EarthMap = lazy(() => import("./map/EarthMap"));
+import EarthMap from "./map/EarthMap";
 
 const REGIONS = [
   { label: "深圳", lat: 22.69, lon: 114.39 },
@@ -358,6 +390,14 @@ function StatusBadge({ status }) {
 }
 
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppInner />
+    </ErrorBoundary>
+  );
+}
+
+function AppInner() {
   const { region, lat, lon, setRegion, setCoords, geojsonData, riskData, status } = useAgentStore();
 
   const handleRegionChange = (e) => {
@@ -514,7 +554,8 @@ export default function App() {
                     display: "block",
                     filter: "saturate(1.3) brightness(1.05)",
                     zIndex: 3, position: "relative",
-                    animation: "flicker 3.5s step-end infinite",
+                    willChange: "transform",
+                    transform: "translateZ(0)",
                   }}
                 />
                 {/* 底部渐变遮罩 — 深紫色 */}
@@ -686,13 +727,9 @@ export default function App() {
             </div>
             {/* 地图本体 */}
             <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
-              <Suspense fallback={
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontFamily: "'Courier New', monospace", fontSize: 12, color: "#6200EE", background: "#000" }}>
-                  ▶ LOADING MAP...
-                </div>
-              }>
+              <ErrorBoundary>
                 <EarthMap region={region} lat={lat} lon={lon} />
-              </Suspense>
+              </ErrorBoundary>
             </div>
           </div>
 

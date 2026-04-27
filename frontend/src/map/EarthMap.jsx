@@ -216,6 +216,10 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ w: 600, h: 500 });
   const [globeReady, setGlobeReady] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
+  // Task 3: isMounted 保证 Globe 只在客户端 DOM 就绪后渲染
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
   /* ── 响应式尺寸 ──────────────────────────────────────── */
   useEffect(() => {
@@ -234,6 +238,13 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     const coords = CITY_COORDS[region] ?? { lat, lng: lon };
     globeRef.current.pointOfView({ lat: coords.lat, lng: coords.lng, altitude: 1.8 }, 1200);
   }, [region, lat, lon, globeReady]);
+
+  /* ── 自动旋转开关实时同步 ────────────────────────────── */
+  useEffect(() => {
+    if (!globeReady || !globeRef.current) return;
+    const controls = globeRef.current.controls();
+    if (controls) controls.autoRotate = isAutoRotating;
+  }, [isAutoRotating, globeReady]);
 
   /* ── WebSocket 连接 ──────────────────────────────────── */
   const connect = useCallback(() => {
@@ -336,7 +347,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         ref={containerRef}
         style={{ width: "100%", height: "100%", overflow: "hidden", background: "transparent" }}
       >
-        {dimensions.w > 0 && (
+        {isMounted && dimensions.w > 0 && (
           <Globe
             ref={globeRef}
             width={dimensions.w}
@@ -375,6 +386,11 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
                   controls.autoRotateSpeed = 0.6;
                   controls.enableZoom      = true;
                   controls.enablePan       = false;
+                  // Task 2: 限制最大缩放，防止静态贴图马赛克
+                  // minDistance 对应最近镜头距离（单位与 globe radius 一致）
+                  controls.minDistance     = 101;   // 不能比地球表面更近
+                  controls.maxDistance     = 800;
+                  console.info("[SYSTEM] High-Resolution dynamic tiles module is pending for Phase 9.");
                 }
               }
             }}
@@ -505,23 +521,42 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         </div>
       )}
 
-      {/* ── 自转指示灯 ── */}
+      {/* ── 自转控制 Toggle ── */}
       <div style={{
-        position: "absolute", bottom: 28, right: 8, zIndex: 600, pointerEvents: "none",
-        display: "flex", alignItems: "center", gap: 5,
-        background: "rgba(0,0,0,0.75)", border: "1.5px solid #FF1493",
-        padding: "3px 10px",
-        fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
+        position: "absolute", bottom: 28, right: 8, zIndex: 600,
+        display: "flex", alignItems: "center", gap: 0,
       }}>
-        <span style={{
-          width: 7, height: 7, borderRadius: "50%",
-          background: globeReady ? "#FF1493" : "#555",
-          boxShadow: globeReady ? "0 0 6px #FF1493" : "none",
-          display: "inline-block",
-        }} />
-        <span style={{ color: globeReady ? "#FF1493" : "#555" }}>
-          {globeReady ? "AUTO-ROTATE" : "LOADING..."}
-        </span>
+        {/* 粗黑投影 */}
+        <div style={{ position: "relative" }}>
+          <div style={{
+            position: "absolute", inset: 0,
+            transform: "translate(3px,3px)",
+            background: "#000",
+          }} />
+          <button
+            onClick={() => setIsAutoRotating((v) => !v)}
+            style={{
+              position: "relative",
+              background: isAutoRotating ? "#FFEE00" : "#1a1a1a",
+              border: `2.5px solid ${isAutoRotating ? "#000" : "#555"}`,
+              padding: "4px 10px",
+              fontFamily: "'Courier New', monospace",
+              fontSize: 10, fontWeight: 900,
+              color: isAutoRotating ? "#000" : "#555",
+              cursor: "pointer", letterSpacing: "0.08em",
+              display: "flex", alignItems: "center", gap: 5,
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: isAutoRotating ? "#000" : "#333",
+              display: "inline-block",
+              boxShadow: isAutoRotating ? "0 0 5px rgba(0,0,0,0.5)" : "none",
+            }} />
+            AUTO-ROTATE: {isAutoRotating ? "ON" : "OFF"}
+          </button>
+        </div>
       </div>
     </div>
   );
