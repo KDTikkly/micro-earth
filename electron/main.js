@@ -167,7 +167,7 @@ app.whenReady().then(async () => {
   console.log('[Electron] Waiting for backend on port', BACKEND_PORT, '...');
   try {
     await waitForPort(BACKEND_PORT);
-    console.log('[Electron] Backend ready ✓');
+    console.log('[Electron] Backend ready [OK]');
   } catch {
     console.warn('[Electron] Backend did not respond in time; proceeding anyway');
   }

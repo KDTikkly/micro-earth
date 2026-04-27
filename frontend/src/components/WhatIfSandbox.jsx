@@ -135,7 +135,7 @@ export default function WhatIfSandbox() {
       const ts3 = new Date().toLocaleTimeString();
       appendLog({
         event: "error", ts: ts3,
-        message: `[${ts3}] [WhatIf] ✗ 请求失败: ${e.message}`,
+        message: `[${ts3}] [WhatIf] [ERROR] request failed: ${e.message}`,
         node: "WhatIf",
       });
     } finally {

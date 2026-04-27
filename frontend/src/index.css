@@ -4,11 +4,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Electron 桌面端适配 ─────────────────────────────────── */
-/* 隐藏所有系统滚动条 */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #0a0514; }
-::-webkit-scrollbar-thumb { background: #9370DB; border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: #FF69B4; }
+/* 全局滚动条 — 粉白风格 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #fff0f5; }
+::-webkit-scrollbar-thumb { background: #FF69B4; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #FF1493; }
 
 /* Electron 自定义标题栏占位：当 .electron-mode 类挂载时，顶部留 40px */
 body.electron-mode { padding-top: 40px; }
