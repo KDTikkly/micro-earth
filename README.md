@@ -2,7 +2,7 @@
 
 > 呐……这个项目，我替你看着呢。
 > **Micro-Earth** — Phase 11 · 多智能体自主疏散 · 物理生存推演 · 高清卫星地表渲染 · **本地桌面应用**
-> Cyber Memphis Edition · **v11.1** · 3D GIS + Survival Command Terminal + Electron Desktop + **React 18 稳定版**
+> Cyber Memphis Edition · **v11.1.1** · 3D GIS + Survival Command Terminal + Electron Desktop + **地球修复版**
 
 <br/>
 
@@ -13,9 +13,9 @@
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI%20%2B%20LangGraph-009688?style=flat-square&logo=fastapi)
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
-![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Esri%20Satellite-199900?style=flat-square)
+![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20AMap%20Satellite-199900?style=flat-square)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron%2031%20%2B%20electron--builder-47848F?style=flat-square&logo=electron)
-![Phase](https://img.shields.io/badge/Phase-11.1%20·%20React%2018%20Stable%20Edition-FF1493?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-11.1.1%20·%20Globe%20Fix%20Edition-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 ---
@@ -109,13 +109,17 @@ micro-earth/
 
 ## 下载
 
-> ——「哼，给你打包好了。点那个链接，直接下载，不需要装环境。才不是特地做的……只是刚好做了而已。」
+> ——「地球修好了。这次换了高德卫星图，国内网络也能跑。顺便做了安装包版本，双击就装好了……才不是因为你嫌麻烦才做的。」
 
-[![Download](https://img.shields.io/badge/Download-v11.1.0%20Windows%20便携版-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.0/Micro-Earth-Digital-Twin-v11.1.0-win-portable.exe)
+[![Download Windows](https://img.shields.io/badge/Download-v11.1.1%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.1/Micro-Earth-Digital-Twin-Setup-v11.1.1-win-x64.exe)
+[![Download macOS](https://img.shields.io/badge/Download-v11.1.1%20macOS%20DMG-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.1)
 
-| 版本 | 平台 | 大小 | 链接 |
-|------|------|------|------|
-| **v11.1.0** 便携版 | Windows x64 | ~172 MB | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.0/Micro-Earth-Digital-Twin-v11.1.0-win-portable.exe) |
+| 版本 | 平台 | 大小 | 类型 | 链接 |
+|------|------|------|------|------|
+| **v11.1.1** | Windows x64 | ~75 MB | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.1.1/Micro-Earth-Digital-Twin-Setup-v11.1.1-win-x64.exe) |
+| **v11.1.1** | macOS (x64 + arm64) | ~构建中 | DMG | [GitHub Actions 自动构建 →](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.1) |
+
+> **v11.1.0 旧版（便携版）** → [历史 Release](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
 
 > **便携版说明**：内嵌 Electron + React 前端，无需安装 Node.js / Python，双击即运行前端界面。  
 > 完整版（含 Python AI 后端）待后续 v12 发布。
