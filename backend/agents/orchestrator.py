@@ -1,13 +1,14 @@
 """
-Micro-Earth Orchestrator — Phase 3
-LangGraph StateGraph: Input -> Geocoder -> DataRetriever -> PhysicsEngine -> Output
-新增：Geocoder 节点（城市 -> 坐标），PhysicsEngine 输出风险指数
+Micro-Earth Orchestrator — Phase 4
+LangGraph StateGraph:
+  Input -> Geocoder -> DataRetriever -> PhysicsEngine -> EntitySimulator -> Output
+新增：EntitySimulator 节点（多智能体自主响应与动态资产推演）
 """
 import asyncio
 import json
 import sys
 import time
-from typing import TypedDict, Annotated, List, Optional
+from typing import TypedDict, Annotated, List, Optional, Any
 from langgraph.graph import StateGraph, END
 import operator
 
@@ -16,19 +17,21 @@ _print = lambda *a, **k: print(*a, **{**k, "flush": True})
 from agents.data_retriever import fetch_shenzhen_geojson
 from agents.physics_engine import compute_indices, compute_risk_index
 from agents.geocoder import geocode
+from agents.entity_simulator import generate_entities, simulate_entities
 
 
 # ── 状态定义 ────────────────────────────────────────────────────────────────
 class AgentState(TypedDict):
     logs:           Annotated[List[str], operator.add]
-    city_query:     str           # 用户输入的城市名
-    region:         str           # 解析后的规范名
+    city_query:     str
+    region:         str
     lat:            float
     lon:            float
     raw_data:       dict
     geojson:        Optional[dict]
     processed_data: dict
-    risk_data:      dict          # Phase 3: 风险指数结果
+    risk_data:      dict
+    entity_data:    Optional[dict]   # Phase 4: 实体模拟结果
 
 
 # ── 节点：Geocoder ──────────────────────────────────────────────────────────
@@ -66,7 +69,6 @@ def node_fetch_data(state: AgentState) -> dict:
             "wind_speed":    10.0,
             "region":        region,
         }
-        # 更新 metadata
         geojson.setdefault("metadata", {})["region"] = region
         geojson["metadata"]["center"] = [lon, lat]
 
@@ -119,10 +121,7 @@ def node_physics(state: AgentState) -> dict:
     geojson = state.get("geojson") or {}
     features = geojson.get("features", [])
 
-    # Phase 2 兼容：热力学指数
     thermo = compute_indices(raw)
-
-    # Phase 3 新增：风险指数
     risk = compute_risk_index(features)
 
     log = (
@@ -140,13 +139,60 @@ def node_physics(state: AgentState) -> dict:
     }
 
 
+# ── 节点：EntitySimulator ───────────────────────────────────────────────────
+def node_entity_simulator(state: AgentState) -> dict:
+    ts = time.strftime("%H:%M:%S")
+    _print(f"[{ts}] [EntitySimulator] 初始化多智能体沙盒...")
+
+    lat = state.get("lat", 22.69)
+    lon = state.get("lon", 114.39)
+    risk_data = state.get("risk_data", {})
+    risk_index = risk_data.get("risk_index", 0)
+    risk_level = risk_data.get("risk_level", "UNKNOWN")
+
+    # 生成实体
+    entities = generate_entities(lat, lon, count=100)
+
+    # 执行一轮模拟（初始推演）
+    result = simulate_entities(entities, risk_index, risk_level, tick=0)
+
+    stats = result["stats"]
+    log1 = (
+        f"[{ts}] [EntitySimulator] ✓ 生成 {stats['total_entities']} 个动态实体 | "
+        f"风险驱动: {risk_index}/100"
+    )
+    log2 = (
+        f"[{ts}] [EntitySimulator] 资产均值: {stats['avg_asset_value']} | "
+        f"恐慌: {stats['panic_count']} | 压力: {stats['stressed_count']} | "
+        f"正常: {stats['normal_count']}"
+    )
+    if result["trade_events"]:
+        log3 = f"[{ts}] [EntitySimulator] 触发 {len(result['trade_events'])} 笔交易事件"
+        _print(log1); _print(log2); _print(log3)
+        logs = [log1, log2, log3]
+    else:
+        _print(log1); _print(log2)
+        logs = [log1, log2]
+
+    return {
+        "logs": logs,
+        "entity_data": result,
+    }
+
+
 # ── 节点：Finish ────────────────────────────────────────────────────────────
 def node_finish(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
     risk = state.get("risk_data", {})
+    entity_data = state.get("entity_data", {})
+    stats = entity_data.get("stats", {})
     level = risk.get("risk_level", "UNKNOWN")
     idx = risk.get("risk_index", 0)
-    msg = f"[{ts}] [Finish] ✓ 工作流完毕 | 风险等级: {level} ({idx}/100)"
+    avg_val = stats.get("avg_asset_value", "—")
+    msg = (
+        f"[{ts}] [Finish] ✓ Phase 4 工作流完毕 | "
+        f"风险: {level} ({idx}/100) | 全局均值资产: {avg_val}"
+    )
     _print(msg)
     return {"logs": [msg]}
 
@@ -154,15 +200,17 @@ def node_finish(state: AgentState) -> dict:
 # ── 图构建 ──────────────────────────────────────────────────────────────────
 def build_graph() -> StateGraph:
     g = StateGraph(AgentState)
-    g.add_node("Geocoder",      node_geocoder)
-    g.add_node("DataRetriever", node_fetch_data)
-    g.add_node("PhysicsEngine", node_physics)
-    g.add_node("Finish",        node_finish)
+    g.add_node("Geocoder",         node_geocoder)
+    g.add_node("DataRetriever",    node_fetch_data)
+    g.add_node("PhysicsEngine",    node_physics)
+    g.add_node("EntitySimulator",  node_entity_simulator)
+    g.add_node("Finish",           node_finish)
     g.set_entry_point("Geocoder")
-    g.add_edge("Geocoder",      "DataRetriever")
-    g.add_edge("DataRetriever", "PhysicsEngine")
-    g.add_edge("PhysicsEngine", "Finish")
-    g.add_edge("Finish",        END)
+    g.add_edge("Geocoder",        "DataRetriever")
+    g.add_edge("DataRetriever",   "PhysicsEngine")
+    g.add_edge("PhysicsEngine",   "EntitySimulator")
+    g.add_edge("EntitySimulator", "Finish")
+    g.add_edge("Finish",          END)
     return g.compile()
 
 
@@ -177,11 +225,7 @@ async def run_graph_stream(
 ):
     """
     异步生成器：逐步 yield 事件给 WebSocket 推流
-    - log: 日志行
-    - geocoded: 坐标解析结果（前端用于飞行定位）
-    - geojson: GeoJSON FeatureCollection（地图渲染）
-    - risk: 风险指数（仪表盘渲染）
-    - done: 完成信号
+    事件类型：start | log | geocoded | geojson | risk | entities | trade | done
     """
     state: AgentState = {
         "logs": [],
@@ -193,24 +237,23 @@ async def run_graph_stream(
         "geojson": None,
         "processed_data": {},
         "risk_data": {},
+        "entity_data": None,
     }
 
     ts = time.strftime("%H:%M:%S")
     yield {
         "event": "start",
-        "message": f"[{ts}] [Orchestrator] Phase 3 工作流启动 — 查询: '{city_query or region}'"
+        "message": f"[{ts}] [Orchestrator] Phase 4 工作流启动 — 查询: '{city_query or region}'"
     }
-
-    final_risk = {}
 
     for graph_event in micro_earth_graph.stream(state):
         for node_name, node_output in graph_event.items():
             # 日志推送
             for log_line in node_output.get("logs", []):
                 yield {"event": "log", "node": node_name, "message": log_line}
-                await asyncio.sleep(0.25)
+                await asyncio.sleep(0.2)
 
-            # Geocoder 结果：新坐标 -> 前端飞行
+            # Geocoder 结果
             if node_name == "Geocoder" and node_output.get("lat"):
                 yield {
                     "event": "geocoded",
@@ -224,7 +267,7 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
-            # GeoJSON 推送
+            # GeoJSON 气象网格
             if node_output.get("geojson"):
                 gj = node_output["geojson"]
                 cnt = len(gj.get("features", []))
@@ -236,7 +279,7 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.15)
 
-            # 风险指数推送
+            # 风险指数
             if node_output.get("risk_data"):
                 final_risk = node_output["risk_data"]
                 yield {
@@ -247,12 +290,67 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
+            # Phase 4: 实体数据推送
+            if node_output.get("entity_data"):
+                ed = node_output["entity_data"]
+                entities = ed.get("entities", [])
+                trade_events = ed.get("trade_events", [])
+                stats = ed.get("stats", {})
+
+                # 推送实体列表（精简字段，减少传输量）
+                slim_entities = [
+                    {
+                        "id":  e["entity_id"],
+                        "lat": e["location"]["lat"],
+                        "lon": e["location"]["lon"],
+                        "val": e["asset_value"],
+                        "st":  e["status"],
+                    }
+                    for e in entities
+                ]
+                yield {
+                    "event": "entities",
+                    "node": node_name,
+                    "message": f"[{time.strftime('%H:%M:%S')}] [EntitySim] {len(slim_entities)} 个实体已就绪",
+                    "data": {"entities": slim_entities, "stats": stats},
+                }
+                await asyncio.sleep(0.15)
+
+                # 逐批推送交易事件
+                for evt in trade_events:
+                    action_map = {
+                        "EMERGENCY_SELL":     "紧急抛售",
+                        "FORCED_LIQUIDATION": "强制清仓",
+                        "DISTRESS_SWAP":      "恐慌互换",
+                        "HEDGE_SWAP":         "对冲互换",
+                        "PARTIAL_SELL":       "部分减仓",
+                        "RISK_TRANSFER":      "风险转移",
+                        "DEFENSIVE_REBALANCE":"防御性再平衡",
+                        "SHORT_HEDGE":        "空头对冲",
+                        "REBALANCE":          "组合再平衡",
+                        "HOLD":               "持仓观望",
+                        "MICRO_ADJUST":       "微幅调仓",
+                    }
+                    action_cn = action_map.get(evt["action"], evt["action"])
+                    msg = (
+                        f"[{evt['ts']}] Entity #{evt['entity_id']:03d} "
+                        f"资产跌 {evt['depreciation_pct']}% → {evt['asset_value']:.0f} "
+                        f"| {action_cn}"
+                    )
+                    yield {
+                        "event": "trade",
+                        "node": node_name,
+                        "message": msg,
+                        "data": evt,
+                    }
+                    await asyncio.sleep(0.08)
+
     ts = time.strftime("%H:%M:%S")
-    yield {"event": "done", "message": f"[{ts}] [Orchestrator] 所有节点执行完毕 ✓"}
+    yield {"event": "done", "message": f"[{ts}] [Orchestrator] Phase 4 所有节点执行完毕 ✓"}
 
 
 if __name__ == "__main__":
     async def _test():
-        async for evt in run_graph_stream(city_query="Tokyo"):
+        async for evt in run_graph_stream(city_query="成都"):
             print(evt.get("message", ""))
     asyncio.run(_test())
