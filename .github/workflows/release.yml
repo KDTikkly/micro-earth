@@ -36,22 +36,13 @@ jobs:
           npm install
           node make-ico.cjs
 
-      - name: Build Windows NSIS installer
+      - name: Build & Publish Windows NSIS installer
         working-directory: electron
-        run: npx electron-builder --win --x64
+        run: npx electron-builder --win --x64 --publish always
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
-
-      - name: Upload Windows installer to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "Micro-Earth Digital Twin ${{ github.ref_name }}"
-          fail_on_unmatched_files: false
-          files: dist-electron/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
     runs-on: macos-latest
@@ -93,23 +84,14 @@ jobs:
         working-directory: electron
         run: npm install
 
-      - name: Build macOS DMG
+      - name: Build & Publish macOS DMG
         working-directory: electron
-        run: npx electron-builder --mac dmg --x64 --arm64
+        run: npx electron-builder --mac dmg --x64 --arm64 --publish always
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
-
-      - name: Upload macOS DMG to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "Micro-Earth Digital Twin ${{ github.ref_name }}"
-          fail_on_unmatched_files: false
-          files: dist-electron/*.dmg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-package:
     runs-on: ubuntu-latest
