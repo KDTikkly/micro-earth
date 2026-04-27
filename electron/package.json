@@ -1,7 +1,7 @@
 {
   "name": "micro-earth-digital-twin",
   "productName": "Micro-Earth Digital Twin",
-  "version": "8.0.0",
+  "version": "11.1.1",
   "description": "Lyria A.I. · Micro-Earth Digital Twin Simulation Platform",
   "author": "Lyria A.I. Research Lab",
   "license": "MIT",
@@ -15,7 +15,8 @@
   },
   "devDependencies": {
     "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "png-to-ico": "^3.0.1"
   },
   "build": {
     "appId": "ai.lyria.micro-earth",
@@ -40,15 +41,15 @@
           ]
         }
       ],
-      "icon": "assets/icon.png",
+      "icon": "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icon.png",
-      "uninstallerIcon": "assets/icon.png",
-      "installerHeaderIcon": "assets/icon.png",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Micro-Earth Digital Twin"

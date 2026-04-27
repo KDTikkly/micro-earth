@@ -550,9 +550,8 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       map.remove();
       mapRef.current = null;
     };
-    // 仅挂载一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // isMounted 变化时触发（等待 DOM 就绪后再初始化 WebGL）
+  }, [isMounted]);
 
   /* ── 区域切换飞行动画 ───────────────────────────────── */
   useEffect(() => {
