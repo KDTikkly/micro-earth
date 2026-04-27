@@ -132,6 +132,95 @@ def super_resolve_grid(features: list, center_lat: float, center_lon: float,
     }
 
 
+def compute_wind_vector_field(features: list, center_lat: float, center_lon: float,
+                              resolution: int = 8) -> dict:
+    """
+    Phase 6: 将网格点的 72h 风场时序数据聚合为标准矢量场结构。
+
+    返回结构：
+    {
+      "times": [str * 72],           # 时间序列标签
+      "center": [lon, lat],
+      "bounds": {min_lat, max_lat, min_lon, max_lon},
+      "hourly_vectors": [            # 72帧，每帧为一个简化网格
+        {
+          "time": str,
+          "hour_offset": int,        # +0h, +1h, ..., +71h
+          "grid_points": [           # 网格采样点
+            {"lat": f, "lon": f, "u": f, "v": f, "speed": f}
+          ],
+          "avg_speed": float,
+          "max_speed": float,
+        }, ...
+      ]
+    }
+    """
+    if not features:
+        return {"times": [], "center": [center_lon, center_lat], "hourly_vectors": [], "bounds": {}}
+
+    # 收集所有带 72h 时序的 features
+    valid_features = [
+        f for f in features
+        if f.get("properties", {}).get("wind_uv_72h")
+    ]
+    if not valid_features:
+        return {"times": [], "center": [center_lon, center_lat], "hourly_vectors": [], "bounds": {}}
+
+    # 确定时间帧数（以第一个 feature 为基准）
+    first_uv = valid_features[0]["properties"]["wind_uv_72h"]
+    n_hours  = len(first_uv)
+    times    = [entry.get("time", f"+{i}h") for i, entry in enumerate(first_uv)]
+
+    span = 1.5
+    bounds = {
+        "min_lat": round(center_lat - span, 4),
+        "max_lat": round(center_lat + span, 4),
+        "min_lon": round(center_lon - span, 4),
+        "max_lon": round(center_lon + span, 4),
+    }
+
+    hourly_vectors = []
+    for h in range(n_hours):
+        grid_points = []
+        speeds_h    = []
+
+        for feat in valid_features:
+            coords = feat.get("geometry", {}).get("coordinates", [center_lon, center_lat])
+            flon, flat = coords[0], coords[1]
+            uv_list = feat["properties"]["wind_uv_72h"]
+            if h < len(uv_list):
+                entry = uv_list[h]
+                spd   = entry.get("speed", 0.0)
+                grid_points.append({
+                    "lat":   round(flat, 4),
+                    "lon":   round(flon, 4),
+                    "u":     entry.get("u", 0.0),
+                    "v":     entry.get("v", 0.0),
+                    "speed": spd,
+                    "direction": entry.get("direction", 0.0),
+                })
+                speeds_h.append(spd)
+
+        avg_speed = round(sum(speeds_h) / max(len(speeds_h), 1), 2)
+        max_speed = round(max(speeds_h) if speeds_h else 0.0, 2)
+
+        hourly_vectors.append({
+            "time":        times[h],
+            "hour_offset": h,
+            "grid_points": grid_points,
+            "avg_speed":   avg_speed,
+            "max_speed":   max_speed,
+        })
+
+    return {
+        "times":          times,
+        "center":         [center_lon, center_lat],
+        "bounds":         bounds,
+        "hourly_vectors": hourly_vectors,
+        "total_hours":    n_hours,
+    }
+
+
 def compute_indices(raw: dict) -> dict:
     """基础热力学指数（Phase 1）"""
     T = raw.get("temperature", 20.0)

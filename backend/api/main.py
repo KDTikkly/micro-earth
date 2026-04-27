@@ -1,8 +1,8 @@
 """
-Micro-Earth FastAPI 主应用 — Phase 5
+Micro-Earth FastAPI 主应用 — Phase 6
 - GET  /health              健康检查
 - POST /api/what-if         What-If 环境干预（返回重新推演结果）
-- WS   /ws/agent-stream     WebSocket 实时推流（日志 + GeoJSON + heatmap）
+- WS   /ws/agent-stream     WebSocket 实时推流（日志 + GeoJSON + heatmap + windfield）
 """
 import asyncio
 import json
@@ -47,7 +47,7 @@ from pydantic import BaseModel, Field
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from agents.orchestrator import run_graph_stream
 
-app = FastAPI(title="Micro-Earth API", version="0.5.0")
+app = FastAPI(title="Micro-Earth API", version="0.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,7 +70,7 @@ class WhatIfRequest(BaseModel):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "Micro-Earth Backend", "version": "0.5.0"}
+    return {"status": "ok", "service": "Micro-Earth Backend", "version": "0.6.0"}
 
 
 @app.post("/api/what-if")

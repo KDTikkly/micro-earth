@@ -1,11 +1,11 @@
 """
-Micro-Earth Orchestrator — Phase 5
+Micro-Earth Orchestrator — Phase 6
 LangGraph StateGraph:
   Input -> Geocoder -> DataRetriever -> PhysicsEngine -> EntitySimulator -> Output
-Phase 5 新增：
-  - PhysicsEngine 节点集成超分辨率空间插值（IDW 插值）
-  - What-If 环境干预参数（temp_offset / precip_multiplier）
-  - heatmap 事件推送高精度矩阵到前端
+Phase 6 新增：
+  - DataRetriever 获取 72h 风速/风向数据
+  - PhysicsEngine 计算矢量场（U/V 分量）
+  - windfield 事件推送 72h 风场时序到前端
 """
 # ── UTF-8 编码保障（防 Windows GBK 报错）──────────────────────────────────────
 import os as _os
@@ -36,7 +36,7 @@ import operator
 _print = lambda *a, **k: print(*a, **{**k, "flush": True})
 
 from agents.data_retriever import fetch_shenzhen_geojson
-from agents.physics_engine import compute_indices, compute_risk_index, super_resolve_grid
+from agents.physics_engine import compute_indices, compute_risk_index, super_resolve_grid, compute_wind_vector_field
 from agents.geocoder import geocode
 from agents.entity_simulator import generate_entities, simulate_entities
 
@@ -54,6 +54,7 @@ class AgentState(TypedDict):
     risk_data:        dict
     entity_data:      Optional[dict]   # Phase 4: 实体模拟结果
     heatmap_data:     Optional[dict]   # Phase 5: 超分辨率热力矩阵
+    windfield_data:   Optional[dict]   # Phase 6: 72h 风场矢量场
     temp_offset:      float            # Phase 5 What-If: 温度偏移
     precip_multiplier: float           # Phase 5 What-If: 降水倍率
 
@@ -161,11 +162,17 @@ def node_physics(state: AgentState) -> dict:
     )
     flood_cnt = len(heatmap.get("flood_zones", []))
 
+    # Phase 6: 72h 风场矢量场
+    windfield = compute_wind_vector_field(features, lat, lon)
+    total_hrs = windfield.get("total_hours", 0)
+    avg_spd_now = windfield["hourly_vectors"][0]["avg_speed"] if windfield.get("hourly_vectors") else 0
+
     log = (
         f"[{ts}] [PhysicsEngine] ✓ 推演完成 | "
         f"风险指数={risk['risk_index']} [{risk['risk_level']}] | "
         f"热力={thermo['heat_index']:.1f} | 风冷={thermo['wind_chill']:.1f} | "
-        f"超分辨率网格=12×12 | 潜在洪涝格={flood_cnt}"
+        f"超分辨率网格=12×12 | 潜在洪涝格={flood_cnt} | "
+        f"风场时序={total_hrs}h | 当前风速≈{avg_spd_now}m/s"
     )
     _print(log)
     if temp_offset != 0.0 or precip_multiplier != 1.0:
@@ -184,6 +191,7 @@ def node_physics(state: AgentState) -> dict:
         "processed_data": processed,
         "risk_data": risk,
         "heatmap_data": heatmap,
+        "windfield_data": windfield,
     }
 
 
@@ -234,15 +242,17 @@ def node_finish(state: AgentState) -> dict:
     risk = state.get("risk_data", {})
     entity_data = state.get("entity_data", {})
     heatmap = state.get("heatmap_data", {})
+    windfield = state.get("windfield_data", {})
     stats = entity_data.get("stats", {})
     level = risk.get("risk_level", "UNKNOWN")
     idx = risk.get("risk_index", 0)
     avg_val = stats.get("avg_asset_value", "—")
     flood_cnt = len(heatmap.get("flood_zones", [])) if heatmap else 0
+    wind_hrs = windfield.get("total_hours", 0) if windfield else 0
     msg = (
-        f"[{ts}] [Finish] ✓ Phase 5 工作流完毕 | "
+        f"[{ts}] [Finish] ✓ Phase 6 工作流完毕 | "
         f"风险: {level} ({idx}/100) | 全局均值资产: {avg_val} | "
-        f"洪涝预警格: {flood_cnt}"
+        f"洪涝预警格: {flood_cnt} | 风场时序: {wind_hrs}h"
     )
     _print(msg)
     return {"logs": [msg]}
@@ -293,6 +303,7 @@ async def run_graph_stream(
         "risk_data": {},
         "entity_data": None,
         "heatmap_data": None,
+        "windfield_data": None,
         "temp_offset": temp_offset,
         "precip_multiplier": precip_multiplier,
     }
@@ -303,7 +314,7 @@ async def run_graph_stream(
         wi_str = f" | ⚡ What-If: T{temp_offset:+.1f}°C, P×{precip_multiplier:.2f}"
     yield {
         "event": "start",
-        "message": f"[{ts}] [Orchestrator] Phase 5 工作流启动 — 查询: '{city_query or region}'{wi_str}"
+        "message": f"[{ts}] [Orchestrator] Phase 6 工作流启动 — 查询: '{city_query or region}'{wi_str}"
     }
 
     for graph_event in micro_earth_graph.stream(state):
@@ -366,6 +377,21 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
+            # Phase 6: 72h 风场矢量场
+            if node_output.get("windfield_data"):
+                wf = node_output["windfield_data"]
+                total_hrs = wf.get("total_hours", 0)
+                yield {
+                    "event": "windfield",
+                    "node": node_name,
+                    "message": (
+                        f"[{time.strftime('%H:%M:%S')}] [WindField] "
+                        f"72h 风场矢量场已就绪 | 时间帧: {total_hrs}h"
+                    ),
+                    "data": wf,
+                }
+                await asyncio.sleep(0.1)
+
             # Phase 4: 实体数据推送
             if node_output.get("entity_data"):
                 ed = node_output["entity_data"]
@@ -420,7 +446,7 @@ async def run_graph_stream(
                     await asyncio.sleep(0.08)
 
     ts = time.strftime("%H:%M:%S")
-    yield {"event": "done", "message": f"[{ts}] [Orchestrator] Phase 5 所有节点执行完毕 ✓"}
+    yield {"event": "done", "message": f"[{ts}] [Orchestrator] Phase 6 所有节点执行完毕 ✓"}
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """
-DataRetriever Agent — Phase 2
+DataRetriever Agent — Phase 6
 使用 httpx 异步请求 Open-Meteo（无需 API Key）
-获取深圳未来 24 小时气温 + 降水概率，输出标准 GeoJSON FeatureCollection
+获取深圳未来 72 小时气温 + 降水概率 + 风速/风向，输出标准 GeoJSON FeatureCollection
 """
 # -*- coding: utf-8 -*-
 import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -22,12 +22,12 @@ GRID_OFFSETS = [
 
 
 async def fetch_point(client: httpx.AsyncClient, lat: float, lon: float) -> dict:
-    """获取单点 24h 气象数据"""
+    """获取单点 72h 气象数据（含风速/风向）"""
     params = {
         "latitude":  lat,
         "longitude": lon,
-        "hourly":    "temperature_2m,precipitation_probability",
-        "forecast_days": 1,
+        "hourly":    "temperature_2m,precipitation_probability,windspeed_10m,winddirection_10m",
+        "forecast_days": 3,
         "timezone":  "Asia/Shanghai",
     }
     resp = await client.get(OPEN_METEO_URL, params=params, timeout=15.0)
@@ -36,17 +36,41 @@ async def fetch_point(client: httpx.AsyncClient, lat: float, lon: float) -> dict
 
 
 def parse_to_geojson(lat: float, lon: float, data: dict) -> dict:
-    """将 Open-Meteo 响应解析为单个 GeoJSON Feature"""
-    hourly = data.get("hourly", {})
-    temps  = hourly.get("temperature_2m", [])
-    precip = hourly.get("precipitation_probability", [])
+    """将 Open-Meteo 响应解析为单个 GeoJSON Feature（含 72h 风场时序）"""
+    import math
+    hourly    = data.get("hourly", {})
+    temps     = hourly.get("temperature_2m", [])
+    precip    = hourly.get("precipitation_probability", [])
+    wind_spd  = hourly.get("windspeed_10m", [])
+    wind_dir  = hourly.get("winddirection_10m", [])
 
-    # 取未来 24 小时均值
+    # 取未来 24 小时均值（兼容旧逻辑）
     avg_temp   = round(sum(temps[:24])  / max(len(temps[:24]),  1), 2)
     avg_precip = round(sum(precip[:24]) / max(len(precip[:24]), 1), 2)
-    # 当前时刻（第 0 小时）
     cur_temp   = temps[0]  if temps  else None
     cur_precip = precip[0] if precip else None
+
+    # 风场矢量：将风速(m/s) + 风向(°) 转换为 U/V 分量
+    # 气象风向惯例：0°=北风，90°=东风；U=向东正，V=向北正
+    # U = -speed * sin(dir_rad), V = -speed * cos(dir_rad)  (气象→数学坐标系)
+    def to_uv(speed, direction):
+        if speed is None or direction is None:
+            return 0.0, 0.0
+        rad = math.radians(direction)
+        u = -speed * math.sin(rad)
+        v = -speed * math.cos(rad)
+        return round(u, 3), round(v, 3)
+
+    wind_uv_72h = []
+    for i in range(min(72, len(wind_spd), len(wind_dir))):
+        u, v = to_uv(wind_spd[i], wind_dir[i])
+        wind_uv_72h.append({
+            "time": hourly.get("time", [])[i] if i < len(hourly.get("time", [])) else None,
+            "speed":     round(wind_spd[i], 2) if wind_spd[i] is not None else 0.0,
+            "direction": round(wind_dir[i], 1) if wind_dir[i] is not None else 0.0,
+            "u": u,
+            "v": v,
+        })
 
     return {
         "type": "Feature",
@@ -59,9 +83,12 @@ def parse_to_geojson(lat: float, lon: float, data: dict) -> dict:
             "precipitation_probability":   cur_precip,
             "avg_temperature_24h":         avg_temp,
             "avg_precipitation_24h":       avg_precip,
-            "times":                       hourly.get("time", [])[:24],
-            "temperatures":                temps[:24],
-            "precipitations":              precip[:24],
+            "times":                       hourly.get("time", [])[:72],
+            "temperatures":                temps[:72],
+            "precipitations":              precip[:72],
+            "wind_speeds":                 wind_spd[:72],
+            "wind_directions":             wind_dir[:72],
+            "wind_uv_72h":                 wind_uv_72h,
         },
     }
 

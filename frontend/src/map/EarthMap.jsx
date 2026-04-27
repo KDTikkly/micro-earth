@@ -1,18 +1,16 @@
 /**
- * EarthMap — Phase 6 · 3D Globe Engine
- * 底层渲染引擎升级：Leaflet → react-globe.gl (Three.js)
+ * EarthMap — Phase 6 · 3D Globe + Wind Field Particles
  *
- * 功能：
- * - 真实卫星贴图 3D 球体，透明背景悬浮于孟菲斯网格之上
- * - autoRotate 缓慢自转
- * - pointsData / arcsData 承接 Agent 实体坐标 + 极端天气数据
- * - 保留赛博孟菲斯容器框架 + WebSocket 数据流
+ * 新增：
+ * - Canvas 风场粒子层（方案 B 自研，requestAnimationFrame 驱动）
+ * - 接收 72h windfield 时序；timelineHour 控制当前帧
+ * - 粒子颜色：微风=#6200EE 强风=#FFEE00 台风=#FF0055
  */
 import { useEffect, useRef, useCallback, useState } from "react";
 import Globe from "react-globe.gl";
 import { useAgentStore } from "../store/agentStore";
 
-/* ── 城市坐标表（用于飞行定位） ──────────────────────────── */
+/* ── 城市坐标表 ──────────────────────────────────────────── */
 const CITY_COORDS = {
   "深圳": { lat: 22.69, lng: 114.39 },
   "北京": { lat: 39.91, lng: 116.39 },
@@ -22,17 +20,26 @@ const CITY_COORDS = {
   "纽约": { lat: 40.71, lng: -74.01 },
 };
 
-/* ── 温度 → 霓虹色（用于热力点）─────────────────────────── */
-function tempToNeonColor(t) {
-  if (t <= 5)  return "#00CFFF";   // 冰蓝
-  if (t <= 15) return "#00FFCC";   // 青绿
-  if (t <= 22) return "#AAFF00";   // 黄绿
-  if (t <= 28) return "#FFEE00";   // 明黄
-  if (t <= 33) return "#FF6600";   // 霓虹橙
-  return "#FF0055";                // 霓虹粉
+/* ── 风速 → 孟菲斯霓虹色 ─────────────────────────────────── */
+function windColor(speed) {
+  if (speed < 3)  return "#6200EE";   // 微风 — 电光紫
+  if (speed < 8)  return "#00BFFF";   // 轻风 — 电光蓝
+  if (speed < 15) return "#FFEE00";   // 强风 — 明黄
+  if (speed < 25) return "#FF6600";   // 烈风 — 霓虹橙
+  return "#FF0055";                   // 台风 — 霓虹粉
 }
 
-/* ── 角标装饰 ─────────────────────────────────────────── */
+/* ── 温度 → 霓虹色 ───────────────────────────────────────── */
+function tempToNeonColor(t) {
+  if (t <= 5)  return "#00CFFF";
+  if (t <= 15) return "#00FFCC";
+  if (t <= 22) return "#AAFF00";
+  if (t <= 28) return "#FFEE00";
+  if (t <= 33) return "#FF6600";
+  return "#FF0055";
+}
+
+/* ── 角标装饰 ─────────────────────────────────────────────── */
 function CornerDecor() {
   return (
     <>
@@ -56,14 +63,156 @@ function CornerDecor() {
   );
 }
 
+/* ── 风场粒子 Canvas 组件 ───────────────────────────────── */
+function WindParticleCanvas({ windframe, width, height }) {
+  const canvasRef = useRef(null);
+  const rafRef    = useRef(null);
+  const particles = useRef([]);
+
+  // 从 windframe 的 grid_points 构建粒子群
+  useEffect(() => {
+    if (!windframe || !windframe.grid_points || width <= 0 || height <= 0) {
+      particles.current = [];
+      return;
+    }
+
+    const pts = windframe.grid_points;
+    if (!pts.length) { particles.current = []; return; }
+
+    // 计算经纬度边界 → 屏幕坐标映射
+    const lons = pts.map((p) => p.lon);
+    const lats = pts.map((p) => p.lat);
+    const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const spanLon = maxLon - minLon || 1;
+    const spanLat = maxLat - minLat || 1;
+
+    const toScreen = (lat, lon) => ({
+      x: ((lon - minLon) / spanLon) * width,
+      y: ((maxLat - lat) / spanLat) * height,   // y 轴翻转
+    });
+
+    // 每个网格点释放若干粒子
+    const PARTICLES_PER_POINT = 8;
+    const newParticles = [];
+
+    for (const pt of pts) {
+      const origin = toScreen(pt.lat, pt.lon);
+      const speed  = pt.speed || 0;
+      const color  = windColor(speed);
+      // 粒子尺寸随风速增大
+      const size   = speed < 3 ? 1.2 : speed < 8 ? 1.8 : speed < 15 ? 2.5 : 3.2;
+
+      for (let i = 0; i < PARTICLES_PER_POINT; i++) {
+        // 在网格点附近随机散布起始位置
+        const jitter = 0.35;
+        newParticles.push({
+          x:      origin.x + (Math.random() - 0.5) * width  * jitter,
+          y:      origin.y + (Math.random() - 0.5) * height * jitter,
+          u:      pt.u,   // 东分量（像素/帧 缩放后）
+          v:      pt.v,   // 北分量
+          speed,
+          color,
+          size,
+          alpha:  0.4 + Math.random() * 0.5,
+          life:   Math.random() * 80,
+          maxLife: 60 + Math.random() * 60,
+          // 用于归一化到屏幕速度
+          scaleX: (width  / spanLon) * 0.004,
+          scaleY: (height / spanLat) * 0.004,
+        });
+      }
+    }
+    particles.current = newParticles;
+  }, [windframe, width, height]);
+
+  // requestAnimationFrame 渲染循环
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      if (!particles.current.length) {
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      for (const p of particles.current) {
+        // 移动
+        p.x += p.u * p.scaleX * p.speed * 0.5;
+        p.y -= p.v * p.scaleY * p.speed * 0.5;  // canvas y轴向下
+        p.life += 1;
+
+        // 超出边界或寿命到期 → 重置到随机位置
+        if (p.life > p.maxLife || p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
+          p.x    = Math.random() * width;
+          p.y    = Math.random() * height;
+          p.life = 0;
+          p.alpha = 0.4 + Math.random() * 0.5;
+        }
+
+        // 生命周期渐入渐出
+        const t     = p.life / p.maxLife;
+        const alpha = t < 0.15
+          ? (t / 0.15) * p.alpha
+          : t > 0.8
+            ? ((1 - t) / 0.2) * p.alpha
+            : p.alpha;
+
+        // 绘制粒子尾迹线
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth   = p.size;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur  = p.size * 3;
+        ctx.lineCap     = "round";
+
+        const tailLen = Math.min(p.speed * 1.2, 14);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(
+          p.x - p.u * p.scaleX * p.speed * 0.5 * tailLen,
+          p.y + p.v * p.scaleY * p.speed * 0.5 * tailLen,
+        );
+        ctx.stroke();
+        ctx.restore();
+      }
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [width, height, windframe]);
+
+  if (width <= 0 || height <= 0) return null;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={width}
+      height={height}
+      style={{
+        position: "absolute", inset: 0,
+        zIndex: 50, pointerEvents: "none",
+        opacity: 0.85,
+      }}
+    />
+  );
+}
+
+
 export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 }) {
   const {
     geojsonData, entityData,
     setGeoJson, appendLog, setStatus, setHeatmap, whatIf,
+    setWindfield, windfield, timelineHour,
   } = useAgentStore();
 
-  const wsRef     = useRef(null);
-  const globeRef  = useRef(null);
+  const wsRef        = useRef(null);
+  const globeRef     = useRef(null);
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ w: 600, h: 500 });
   const [globeReady, setGlobeReady] = useState(false);
@@ -119,6 +268,8 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
           useAgentStore.getState().appendTrade(data.data);
         if (data.event === "heatmap" && data.data)
           setHeatmap(data.data);
+        if (data.event === "windfield" && data.data)
+          setWindfield(data.data);
         if (data.event === "risk" && data.data)
           useAgentStore.getState().setRiskData(data.data);
         if (data.event === "done")  setStatus("IDLE");
@@ -131,7 +282,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       appendLog({ event: "error", message: "[ERROR] WebSocket 连接失败", ts: new Date().toLocaleTimeString() });
     };
     ws.onclose  = () => setStatus("IDLE");
-  }, [region, lat, lon, setGeoJson, appendLog, setStatus, setHeatmap, whatIf]);
+  }, [region, lat, lon, setGeoJson, appendLog, setStatus, setHeatmap, setWindfield, whatIf]);
 
   useEffect(() => {
     connect();
@@ -139,21 +290,18 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   }, [connect]);
 
   /* ── 构建 Globe 数据源 ───────────────────────────────── */
-
-  // ① 气象节点 → 3D 光柱（来自 GeoJSON）
   const weatherPoints = (geojsonData?.features ?? []).map((f) => {
     const [lng, lt] = f.geometry.coordinates;
     const p         = f.properties ?? {};
     const t         = p.temperature_2m ?? 20;
     return {
       lat: lt, lng,
-      size:  0.6 + (Math.abs(t - 15) / 30) * 1.2,   // 温度越极端柱越高
+      size:  0.6 + (Math.abs(t - 15) / 30) * 1.2,
       color: tempToNeonColor(t),
       label: `${t}°C · ${p.precipitation_probability ?? "--"}%`,
     };
   });
 
-  // ② 实体智能体 → 霓虹粉发光点
   const entityPoints = (entityData?.entities ?? []).map((ent) => ({
     lat:   ent.lat,
     lng:   ent.lon,
@@ -168,7 +316,6 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const heatmapData = useAgentStore((s) => s.heatmapData);
   const floodCount  = heatmapData?.flood_zones?.length ?? 0;
 
-  // ③ 洪涝区 → 弧线（从中心城市射向每个洪涝点）
   const floodArcs = (heatmapData?.flood_zones ?? []).map((fz) => ({
     startLat: lat,  startLng: lon,
     endLat:   fz.lat, endLng: fz.lon,
@@ -176,6 +323,10 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     stroke:   1.5,
     label:    `FLOOD · intensity ${fz.intensity?.toFixed(1)}%`,
   }));
+
+  /* ── 当前时间帧的风场数据 ───────────────────────────── */
+  const currentWindFrame = windfield?.hourly_vectors?.[timelineHour] ?? null;
+  const windHours = windfield?.total_hours ?? 0;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -190,22 +341,12 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
             ref={globeRef}
             width={dimensions.w}
             height={dimensions.h}
-
-            /* 地球贴图 */
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-
-            /* 透明背景，悬浮于孟菲斯网格 */
             backgroundColor="rgba(0,0,0,0)"
-
-            /* 大气层光晕 */
             atmosphereColor="#FF69B4"
             atmosphereAltitude={0.18}
-
-            /* 自转 */
             animateIn={true}
-
-            /* 气象节点 + 实体节点 → 3D 光柱 */
             pointsData={allPoints}
             pointLat="lat"
             pointLng="lng"
@@ -214,8 +355,6 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
             pointRadius={0.45}
             pointResolution={8}
             pointLabel="label"
-
-            /* 洪涝区弧线 */
             arcsData={floodArcs}
             arcStartLat="startLat"
             arcStartLng="startLng"
@@ -227,11 +366,8 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
             arcDashGap={0.2}
             arcDashAnimateTime={1800}
             arcLabel="label"
-
-            /* Globe 就绪回调 */
             onGlobeReady={() => {
               setGlobeReady(true);
-              // 开启 autoRotate
               if (globeRef.current) {
                 const controls = globeRef.current.controls();
                 if (controls) {
@@ -246,10 +382,19 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         )}
       </div>
 
+      {/* ── Phase 6: 风场粒子 Canvas 叠加层 ── */}
+      {currentWindFrame && (
+        <WindParticleCanvas
+          windframe={currentWindFrame}
+          width={dimensions.w}
+          height={dimensions.h}
+        />
+      )}
+
       {/* ── 角标装饰 ── */}
       <CornerDecor />
 
-      {/* ── FETCH 按钮 — 右上角 ── */}
+      {/* ── FETCH 按钮 ── */}
       <div style={{ position: "absolute", top: 8, right: 8, zIndex: 600 }}>
         <div style={{
           position: "absolute", inset: 0,
@@ -272,7 +417,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         >▶ FETCH</button>
       </div>
 
-      {/* ── 数据节点徽章 — 左下 ── */}
+      {/* ── 数据节点徽章 ── */}
       <div style={{
         position: "absolute", bottom: 28, left: 8, zIndex: 600, pointerEvents: "none",
         background: "#FFEE00", border: "2.5px solid #000", boxShadow: "3px 3px 0 0 #000",
@@ -336,6 +481,26 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
             padding: "1px 6px", color: "#FF1493",
           }}>
             3D GLOBE · THREE.JS
+          </span>
+        </div>
+      )}
+
+      {/* ── Phase 6: 风场状态徽章 ── */}
+      {windHours > 0 && currentWindFrame && (
+        <div style={{
+          position: "absolute", top: 8, left: 8, zIndex: 600, pointerEvents: "none",
+          display: "flex", alignItems: "center", gap: 4,
+          background: "rgba(0,0,0,0.8)", border: "2px solid #9370DB",
+          padding: "3px 8px",
+          fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
+          boxShadow: "0 0 8px rgba(147,112,219,0.6)",
+        }}>
+          <span style={{ color: "#9370DB" }}>〜</span>
+          <span style={{ color: windColor(currentWindFrame.avg_speed) }}>
+            WIND·{currentWindFrame.avg_speed}m/s
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 9 }}>
+            +{timelineHour}H
           </span>
         </div>
       )}

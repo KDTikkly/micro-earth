@@ -1,5 +1,5 @@
 import "./index.css";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import BrutalistCard from "./components/BrutalistCard";
 import AgentTerminal from "./components/AgentTerminal";
@@ -18,6 +18,200 @@ const REGIONS = [
   { label: "东京", lat: 35.68, lon: 139.69 },
   { label: "纽约", lat: 40.71, lon: -74.01 },
 ];
+
+/* ── Phase 6: Temporal Scrubber 时空播放器 ── */
+function TemporalScrubber() {
+  const { windfield, timelineHour, setTimelineHour } = useAgentStore();
+  const [playing, setPlaying] = useState(false);
+  const intervalRef = useRef(null);
+  const maxHour = (windfield?.total_hours ?? 72) - 1;
+  const hasData = !!windfield?.total_hours;
+
+  // 当前帧时间标签
+  const currentTime = windfield?.hourly_vectors?.[timelineHour]?.time ?? `+${timelineHour}h`;
+  const currentSpeed = windfield?.hourly_vectors?.[timelineHour]?.avg_speed ?? "--";
+  const currentMaxSpeed = windfield?.hourly_vectors?.[timelineHour]?.max_speed ?? "--";
+
+  // PLAY 自动推进
+  useEffect(() => {
+    if (playing) {
+      intervalRef.current = setInterval(() => {
+        setTimelineHour((prev) => {
+          const next = prev >= maxHour ? 0 : prev + 1;
+          if (next === 0) setPlaying(false);
+          return next;
+        });
+      }, 300);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [playing, maxHour, setTimelineHour]);
+
+  const windSpeedColor = (s) => {
+    if (s === "--") return "#888";
+    if (s < 3)  return "#9370DB";
+    if (s < 8)  return "#00BFFF";
+    if (s < 15) return "#FFEE00";
+    if (s < 25) return "#FF6600";
+    return "#FF0055";
+  };
+
+  return (
+    <div style={{
+      border: "3px solid #000",
+      boxShadow: "5px 5px 0 0 #9370DB",
+      background: "#000",
+      padding: 0,
+      flexShrink: 0,
+    }}>
+      {/* 标题栏 */}
+      <div style={{
+        borderBottom: "2px solid #9370DB",
+        padding: "4px 10px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "rgba(147,112,219,0.15)",
+      }}>
+        <span style={{
+          fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 900,
+          color: "#9370DB", letterSpacing: "0.15em",
+        }}>⏱ TEMPORAL SCRUBBER · 72H WIND FORECAST</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* 当前风速显示 */}
+          <span style={{
+            fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
+            color: windSpeedColor(currentSpeed),
+            textShadow: `0 0 6px ${windSpeedColor(currentSpeed)}`,
+          }}>
+            AVG {currentSpeed}m/s  MAX {currentMaxSpeed}m/s
+          </span>
+          <span style={{
+            fontFamily: "'Courier New', monospace", fontSize: 10, color: "#00BFFF",
+            fontWeight: 700,
+          }}>{currentTime}</span>
+        </div>
+      </div>
+
+      {/* 主体区域 */}
+      <div style={{
+        padding: "8px 12px 10px",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        {/* PLAY/PAUSE 按钮 */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div style={{
+            position: "absolute", inset: 0,
+            transform: "translate(3px,3px)",
+            background: playing ? "#AA0030" : "#AA8800",
+            border: "2.5px solid #000",
+          }} />
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            disabled={!hasData}
+            style={{
+              position: "relative",
+              background: playing ? "#FF0055" : "#FFEE00",
+              border: "2.5px solid #000",
+              padding: "6px 14px",
+              fontFamily: "'Courier New', monospace",
+              fontSize: 12, fontWeight: 900,
+              color: "#000", cursor: hasData ? "pointer" : "not-allowed",
+              letterSpacing: "0.08em",
+              opacity: hasData ? 1 : 0.4,
+            }}
+            onMouseDown={(e) => { if (hasData) e.currentTarget.style.transform = "translate(3px,3px)"; }}
+            onMouseUp={(e)   => { e.currentTarget.style.transform = ""; }}
+            onMouseLeave={(e)=> { e.currentTarget.style.transform = ""; }}
+          >
+            {playing ? "⏸ PAUSE" : "▶ PLAY"}
+          </button>
+        </div>
+
+        {/* 时间轴滑块 — 极度粗犷孟菲斯风格 */}
+        <div style={{ flex: 1, position: "relative" }}>
+          {/* 滑轨刻度背景 */}
+          <div style={{
+            position: "absolute", top: "50%", left: 0, right: 0,
+            transform: "translateY(-50%)",
+            height: 8,
+            background: "#111",
+            border: "2px solid #333",
+            zIndex: 1,
+          }}>
+            {/* 已播放进度条 */}
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0,
+              width: `${(timelineHour / Math.max(maxHour, 1)) * 100}%`,
+              background: "linear-gradient(90deg, #9370DB, #00BFFF)",
+              boxShadow: "0 0 8px rgba(147,112,219,0.6)",
+              transition: "width 0.1s linear",
+            }} />
+            {/* 刻度线：+0h, +24h, +48h, +72h */}
+            {[0, 24, 48, 72].map((h) => (
+              <div key={h} style={{
+                position: "absolute",
+                left: `${(h / 72) * 100}%`,
+                top: -6, transform: "translateX(-50%)",
+                width: 2, height: 20,
+                background: "#444",
+                zIndex: 2,
+              }} />
+            ))}
+          </div>
+          {/* 实际 range input */}
+          <input
+            type="range"
+            className="temporal-scrubber"
+            min={0}
+            max={maxHour || 71}
+            step={1}
+            value={timelineHour}
+            onChange={(e) => setTimelineHour(Number(e.target.value))}
+            style={{
+              position: "relative", zIndex: 2,
+              width: "100%",
+              height: 36,
+              background: "transparent",
+              cursor: hasData ? "pointer" : "not-allowed",
+              outline: "none",
+            }}
+            disabled={!hasData}
+          />
+        </div>
+
+        {/* 时间偏移标签 */}
+        <div style={{
+          flexShrink: 0,
+          background: "#FFEE00",
+          border: "2.5px solid #000",
+          boxShadow: "3px 3px 0 0 #000",
+          padding: "4px 10px",
+          fontFamily: "'Courier New', monospace",
+          fontSize: 14, fontWeight: 900, color: "#000",
+          minWidth: 52, textAlign: "center",
+        }}>
+          +{timelineHour}H
+        </div>
+      </div>
+
+      {/* 风速图例 */}
+      <div style={{
+        borderTop: "1px solid #222",
+        padding: "4px 12px",
+        display: "flex", gap: 12, alignItems: "center",
+      }}>
+        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#555", letterSpacing: "0.1em" }}>WIND LEGEND:</span>
+        {[["CALM", "#9370DB", "<3"], ["BREEZE", "#00BFFF", "3-8"], ["STRONG", "#FFEE00", "8-15"], ["GALE", "#FF6600", "15-25"], ["TYPHOON", "#FF0055", ">25"]].map(([label, color, range]) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <div style={{ width: 8, height: 3, background: color, boxShadow: `0 0 4px ${color}` }} />
+            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color, fontWeight: 700 }}>{label}</span>
+            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 8, color: "#555" }}>{range}m/s</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── 全息粒子代码雨背景（仅左列） ── */
 function HoloParticlesBg() {
@@ -459,14 +653,16 @@ export default function App() {
           </motion.div>
         </div>
 
-        {/* 中央地图 */}
+        {/* 中央地图 + Temporal Scrubber */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.12 }}
-          style={{ minWidth: 0, display: "flex", flexDirection: "column", height: "100%" }}
+          style={{ minWidth: 0, display: "flex", flexDirection: "column", height: "100%", gap: 8 }}
         >
+          {/* 地图卡片 */}
           <div style={{
             border: "3px solid #000", boxShadow: "6px 6px 0 0 #000",
-            background: "#fff", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden",
+            background: "#fff", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden",
+            minHeight: 0,
           }}>
             {/* 地图标题栏 — 明黄底 */}
             <div style={{
@@ -499,6 +695,9 @@ export default function App() {
               </Suspense>
             </div>
           </div>
+
+          {/* Phase 6: Temporal Scrubber — 地图正下方 */}
+          <TemporalScrubber />
         </motion.div>
 
         {/* 右侧：Agent 终端 */}
