@@ -23,28 +23,29 @@ L.Icon.Default.mergeOptions({
 function pointToLayer(feature, latlng) {
   const precip  = feature?.properties?.precipitation_probability ?? 0;
   const isRainy = precip > 50;
-  const bg      = isRainy ? "#FFB5A7" : "#FFE66D";
+  const bg      = isRainy ? "#FF0055" : "#FFEE00";
+  const textCol = isRainy ? "#fff" : "#000";
   const temp    = feature?.properties?.temperature_2m ?? "--";
 
   const icon = L.divIcon({
     className: "",
     html: `
       <div style="
-        width:42px; height:42px;
+        width:44px; height:44px;
         background:${bg};
-        border:2px solid #1A1A1A;
-        box-shadow:3px 3px 0 0 #1A1A1A;
+        border:2.5px solid #000;
+        box-shadow:4px 4px 0 0 #000;
         display:flex; flex-direction:column;
         align-items:center; justify-content:center;
         font-family:'Courier New',monospace;
         line-height:1.2; text-align:center;
       ">
-        <span style="font-size:11px;font-weight:900;color:#1A1A1A">${temp}°</span>
-        <span style="font-size:8px;font-weight:700;color:#555">${precip}%</span>
+        <span style="font-size:12px;font-weight:900;color:${textCol}">${temp}°</span>
+        <span style="font-size:9px;font-weight:700;color:${textCol};opacity:0.8">${precip}%</span>
       </div>
     `,
-    iconSize:   [42, 42],
-    iconAnchor: [21, 21],
+    iconSize:   [44, 44],
+    iconAnchor: [22, 22],
   });
 
   return L.marker(latlng, { icon });
@@ -209,31 +210,34 @@ function EntityLayer() {
   return null;
 }
 
-// ── 图纸风角标装饰 ──────────────────────────────────────────
+// ── Memphis 角标装饰 ──────────────────────────────────────────
 function BlueprintCornerDecor() {
   return (
     <>
+      {/* 右上角：霓虹粉三角 */}
       <div style={{
         position: "absolute", top: 0, right: 0,
         zIndex: 1000, pointerEvents: "none",
         width: 0, height: 0,
-        borderLeft: "28px solid transparent",
-        borderTop: "28px solid #9BF6FF",
-        filter: "drop-shadow(-2px 2px 0 #1A1A1A)",
+        borderLeft: "32px solid transparent",
+        borderTop: "32px solid #FF0055",
+        filter: "drop-shadow(-3px 3px 0 #000)",
       }} />
+      {/* 左下角：明黄方块 */}
       <div style={{
         position: "absolute", bottom: 0, left: 0,
         zIndex: 1000, pointerEvents: "none",
-        width: 14, height: 14,
-        background: "#FFE66D",
-        border: "2px solid #1A1A1A",
+        width: 16, height: 16,
+        background: "#FFEE00",
+        border: "2.5px solid #000",
       }} />
+      {/* 右下角：电光紫菱形 */}
       <div style={{
-        position: "absolute", bottom: 6, right: 6,
+        position: "absolute", bottom: 8, right: 8,
         zIndex: 1000, pointerEvents: "none",
-        width: 12, height: 12,
-        background: "#FFB5A7",
-        border: "2px solid #1A1A1A",
+        width: 14, height: 14,
+        background: "#6200EE",
+        border: "2px solid #000",
         transform: "rotate(45deg)",
       }} />
     </>
@@ -306,7 +310,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         attributionControl={true}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           subdomains="abcd"
           maxZoom={19}
@@ -333,12 +337,12 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       <div style={{
         position: "absolute", bottom: 28, left: 8,
         zIndex: 600, pointerEvents: "none",
-        background: "#FFE66D",
-        border: "2px solid #1A1A1A",
-        boxShadow: "2px 2px 0 0 #1A1A1A",
+        background: "#FFEE00",
+        border: "2.5px solid #000",
+        boxShadow: "3px 3px 0 0 #000",
         padding: "3px 10px",
         fontFamily: "'Courier New', monospace",
-        fontSize: 13, fontWeight: 900, color: "#1A1A1A",
+        fontSize: 12, fontWeight: 900, color: "#000",
       }}>
         {geojsonData
           ? `◉ ${geojsonData.features?.length ?? 0} NODES / ${geojsonData.metadata?.region ?? region}`
@@ -354,16 +358,16 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
           fontFamily: "'Courier New', monospace",
           fontSize: 11, fontWeight: 900,
         }}>
-          <span style={{ background: "#9BF6FF", border: "2px solid #1A1A1A", padding: "2px 7px" }}>
+          <span style={{ background: "#00FF00", border: "2.5px solid #000", padding: "2px 7px", color: "#000", boxShadow: "2px 2px 0 0 #000" }}>
             ▷ {totalEntities - panicCount - stressedCount} NORMAL
           </span>
           {stressedCount > 0 && (
-            <span style={{ background: "#FFE66D", border: "2px solid #1A1A1A", padding: "2px 7px" }}>
+            <span style={{ background: "#FFEE00", border: "2.5px solid #000", padding: "2px 7px", color: "#000", boxShadow: "2px 2px 0 0 #000" }}>
               ◆ {stressedCount} STRESSED
             </span>
           )}
           {panicCount > 0 && (
-            <span style={{ background: "#FFB5A7", border: "2px solid #1A1A1A", padding: "2px 7px", color: "#C0392B" }}>
+            <span style={{ background: "#FF0055", border: "2.5px solid #000", padding: "2px 7px", color: "#fff", boxShadow: "2px 2px 0 0 #000" }}>
               ● {panicCount} PANIC
             </span>
           )}
@@ -375,18 +379,19 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         <div style={{
           position: "absolute", inset: 0,
           transform: "translate(3px,3px)",
-          background: "#B5EAD7", border: "2px solid #1A1A1A",
+          background: "#00AA00", border: "2px solid #000",
         }} />
         <button
           onClick={connect}
           style={{
             position: "relative",
-            background: "#fff",
-            border: "2px solid #1A1A1A",
+            background: "#00FF00",
+            border: "2.5px solid #000",
             padding: "5px 12px",
             fontFamily: "'Courier New', monospace",
-            fontSize: 13, fontWeight: 900, color: "#1A1A1A",
+            fontSize: 12, fontWeight: 900, color: "#000",
             cursor: "pointer", letterSpacing: "1px",
+            boxShadow: "0 0 8px rgba(0,255,0,0.5)",
           }}
           onMouseDown={(e) => { e.currentTarget.style.transform = "translate(3px,3px)"; }}
           onMouseUp={(e) => { e.currentTarget.style.transform = ""; }}

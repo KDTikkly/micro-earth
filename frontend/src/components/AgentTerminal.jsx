@@ -6,19 +6,22 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useAgentStore } from "../store/agentStore";
 
 const NODE_COLORS = {
-  FetchData:     "#2D6A4F",
-  DataRetriever: "#2D6A4F",
-  Geocoder:      "#1A4A8A",
-  PhysicsEngine: "#8A00AA",
-  Process:       "#1A4A8A",
-  Finish:        "#5A3080",
-  start:         "#8A4A00",
-  done:          "#2D6A4F",
-  error:         "#C0392B",
-  geojson:       "#1A4A8A",
-  geocoded:      "#0066CC",
-  risk:          "#AA0044",
-  cmd:           "#00AA66",
+  FetchData:      "#00FF00",
+  DataRetriever:  "#00FF00",
+  Geocoder:       "#00FFFF",
+  PhysicsEngine:  "#FF00FF",
+  EntitySimulator:"#FFEE00",
+  Process:        "#00FFFF",
+  Finish:         "#6200EE",
+  start:          "#FF6600",
+  done:           "#00FF00",
+  error:          "#FF0055",
+  geojson:        "#00FFFF",
+  geocoded:       "#00FFFF",
+  risk:           "#FF0055",
+  trade:          "#FFEE00",
+  entities:       "#00FF00",
+  cmd:            "#FF6600",
 };
 
 export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 114.39 }) {
@@ -100,13 +103,13 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
       {/* 工具栏 */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "8px 12px", borderBottom: "2px solid #1A1A1A",
-        background: "#f8f8f8",
+        padding: "8px 12px", borderBottom: "2px solid #000",
+        background: "#000",
         fontFamily: "'Courier New', monospace", fontSize: 13, color: "#999",
         flexShrink: 0, gap: 8,
       }}>
-        <span style={{ fontWeight: 700, color: "#1A1A1A", fontSize: 13, whiteSpace: "nowrap" }}>AGENT STREAM</span>
-        <span style={{ color: "#777", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{region}</span>
+        <span style={{ fontWeight: 900, color: "#00FF00", fontSize: 12, whiteSpace: "nowrap", letterSpacing: "0.1em" }}>▶ AGENT STREAM</span>
+        <span style={{ color: "#FFEE00", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 700 }}>{region}</span>
       </div>
 
       {/* 日志区 */}
@@ -185,17 +188,15 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
       {/* 操作按钮 */}
       <div style={{
         display: "flex", gap: 8, padding: "8px 12px",
-        borderTop: "2px solid #1A1A1A", background: "#f8f8f8",
+        borderTop: "2px solid #000", background: "#111",
       }}>
-        {/* RUN 按钮（带错位底色效果） */}
+        {/* RUN 按钮 */}
         <div style={{ flex: 1, position: "relative" }}>
-          {/* 错位底色 */}
           <div style={{
             position: "absolute", inset: 0,
             transform: "translate(4px, 4px)",
-            background: "#B5EAD7",
-            border: "2px solid #1A1A1A",
-            transition: "transform 0.08s",
+            background: "#00AA00",
+            border: "2px solid #000",
           }} />
           <button
             onClick={connect}
@@ -204,14 +205,14 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
               position: "relative",
               width: "100%",
               padding: "10px 0",
-              background: isRunning ? "#f0f0f0" : "#FFE66D",
-              color: isRunning ? "#bbb" : "#1A1A1A",
-              border: "2px solid #1A1A1A",
+              background: isRunning ? "#333" : "#00FF00",
+              color: isRunning ? "#555" : "#000",
+              border: "2px solid #000",
               fontFamily: "'Courier New', monospace",
-              fontWeight: 900, fontSize: 16,
+              fontWeight: 900, fontSize: 15,
               letterSpacing: "0.08em", textTransform: "uppercase",
               cursor: isRunning ? "not-allowed" : "pointer",
-              transition: "transform 0.08s, box-shadow 0.08s",
+              boxShadow: isRunning ? "none" : "0 0 10px rgba(0,255,0,0.5)",
             }}
             onMouseEnter={(e) => { if (!isRunning) e.currentTarget.style.transform = "translate(2px,2px)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translate(0,0)"; }}
@@ -227,19 +228,19 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           <div style={{
             position: "absolute", inset: 0,
             transform: "translate(3px, 3px)",
-            background: "#FFB5A7", border: "2px solid #1A1A1A",
+            background: "#AA0033", border: "2px solid #000",
           }} />
           <button
             onClick={clearLogs}
             style={{
               position: "relative",
               padding: "10px 18px",
-              background: "#fff",
-              color: "#1A1A1A",
-              border: "2px solid #1A1A1A",
+              background: "#FF0055",
+              color: "#fff",
+              border: "2px solid #000",
               fontFamily: "'Courier New', monospace",
-              fontWeight: 900, fontSize: 15,
-              letterSpacing: "0.08em", textTransform: "uppercase",
+              fontWeight: 900, fontSize: 14,
+              letterSpacing: "0.08em",
               cursor: "pointer",
             }}
             onMouseDown={(e) => { e.currentTarget.style.transform = "translate(3px,3px)"; }}
