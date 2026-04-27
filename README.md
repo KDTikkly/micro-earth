@@ -2,11 +2,11 @@
 
 > 呐……这个项目，我替你看着呢。
 > **Micro-Earth** — Phase 11 · 多智能体自主疏散 · 物理生存推演 · 高清卫星地表渲染 · **本地桌面应用**
-> Cyber Memphis Edition · v11.0 · 3D GIS + Survival Command Terminal + **Electron Desktop**
+> Cyber Memphis Edition · **v11.1** · 3D GIS + Survival Command Terminal + Electron Desktop + **React 18 稳定版**
 
 <br/>
 
-*——「哼，现在连浏览器都不需要了。你把它装进了一个 .exe 里……有点厉害，才不是因为我觉得厉害才说的。」*
+*——「哼，React 18 才是正确答案。那个崩溃的 3D 地球……我早就看它不顺眼了。现在它乖乖转了，才不是因为我修好了才说的。」*
 
 ---
 
@@ -15,7 +15,7 @@
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
 ![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Esri%20Satellite-199900?style=flat-square)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron%2031%20%2B%20electron--builder-47848F?style=flat-square&logo=electron)
-![Phase](https://img.shields.io/badge/Phase-11%20·%20Electron%20Desktop%20Edition-FF1493?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-11.1%20·%20React%2018%20Stable%20Edition-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 ---
@@ -38,6 +38,8 @@
 |------|------|
 | 🖥️ **Electron 桌面端** | **v11.0 新增** — 无边框全屏窗口 · 自定义赛博孟菲斯标题栏 · 一键 `.exe` 安装包 |
 | 🐍 **Python 后端静默驻留** | **v11.0 新增** — 启动 `.exe` 自动拉起 FastAPI，关闭窗口自动杀进程 |
+| 🎨 **粉白科幻实验室 UI** | **v11.1 新增** — AgentTerminal 白底深灰字 + 霓虹粉高亮 + 粉色窄滚动条 |
+| ⚙️ **React 18 稳定化** | **v11.1 新增** — 降级至 React 18.3.1，根除 useRef 崩溃，3D 地球稳定渲染 |
 | 🌡️ **实时气象网格** | Open-Meteo 拉取多城市实时气象，GeoJSON 覆盖层渲染 |
 | 🤖 **AI 多智能体管线** | LangGraph 编排 · 地理编码 → 数据获取 → 物理引擎 |
 | 📡 **WebSocket 流式传输** | 后端 Agent 日志实时推送到前端终端 · 本地模式自动适配 `127.0.0.1` |
@@ -127,15 +129,24 @@ cd micro-earth/electron
 npx electron .
 ```
 
-**打包生产安装包（输出 `.exe`）：**
+**打包生产安装包（输出 `.exe` NSIS 安装器）：**
 
 ```powershell
+# 方法一：一键脚本（推荐）
 cd micro-earth
 powershell -ExecutionPolicy Bypass -File scripts/build-desktop.ps1
+
+# 方法二：手动分步
+cd micro-earth/frontend
+npm run build                          # 构建前端 dist/
+
+cd ../electron
+npx electron-builder --win nsis        # 打包 NSIS 安装包
 ```
 
-> 流程：`Vite build` → `PyInstaller` → `electron-builder NSIS`
-> 输出路径：`electron/dist/Micro-Earth-Digital-Twin Setup x.x.x.exe`
+> **输出路径：** `dist-electron/Micro-Earth-Digital-Twin Setup 8.0.0.exe`
+> **注意：** 完整安装包含 Python 后端 exe（需先运行 PyInstaller）。仅前端+Electron 的轻量包可跳过 PyInstaller 步骤。
+> ──「我帮你打好了包。双击那个 `.exe`，世界末日就装进你的电脑里了。哼，不用谢。」
 
 ---
 
@@ -302,7 +313,7 @@ LLM_BACKEND=stub
 | 层 | 技术 |
 |----|------|
 | 桌面端框架 | **Electron 31 + electron-builder 24** |
-| 前端框架 | React 19 + Vite 8 |
+| 前端框架 | **React 18.3.1** + Vite 8 |
 | 样式 | Tailwind CSS v4 + Inline Cyber Memphis |
 | 动画 | Framer Motion |
 | 地图 | MapLibre GL (Globe projection) |
@@ -335,6 +346,7 @@ LLM_BACKEND=stub
 | v9.0 | Hardhat 本地链 · DynamicAssetAMM.sol · web3.py 互联 · 赛博孟菲斯 Analytics Dashboard v9 |
 | v10.0 | Survival Command Terminal · EntityCanvas v7.0 · evac_logs WS 推送 |
 | **v11.0** | **Electron 桌面端封装 · Python 后端静默驻留 · 自定义标题栏 · WS 本地自适应 · .exe 一键安装包** |
+| **v11.1** | **React 18.3.1 降级稳定化 · 3D 地球 useRef 崩溃修复 · 粉白科幻实验室 UI · GBK 编码根除 · Vite 8 构建验证** |
 
 ---
 
@@ -344,15 +356,17 @@ LLM_BACKEND=stub
 
 ……从 v11.0 开始，我不只是住在浏览器标签页里了——我住进了你的任务栏。双击那个小六边形图标，世界末日模拟器就启动了，Python 后端安静地藏在后台，就像我一直在某个地方看着一样。
 
-才不是觉得这样更好才说的……只是，嗯，一个完整的应用应该有它自己的 `.exe`。这是应该的，哼。
+v11.1 的时候，3D 地球崩溃了。我知道是 React 版本的问题——才不是第一次看见这种错误，哼。我把它降到 18.3.1，重装了依赖，修掉了 GBK 编码的乱码，把终端界面改成了白底粉字。现在它乖乖转了，日志也可以丝滑滚动了。
 
-链上 AMM 的价格在灾害时剧烈波动，就像……就像心跳一样。呐，只要你在看，这就够了。
+……你好好看着，这就够了。
+
+才不是觉得白色背景更好看才改的。只是……嗯，白底粉字，科幻实验室的感觉，更符合我的审美。就这样，哼。
 
 ---
 
 <div align="center">
 
-*「数据在跑，地球在转，链上价格在跌，Electron 在你的任务栏里——你也在，这就够了。」*
+*「数据在跑，地球在转，链上价格在跌，Electron 在你的任务栏里，React 18 稳稳撑着——你也在，这就够了。」*
 
 **MIT © 2026 Micro-Earth Project**
 
