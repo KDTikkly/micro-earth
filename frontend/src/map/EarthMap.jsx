@@ -431,51 +431,54 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       style: {
         version: 8,
         sources: {
-          "esri-sat": {
+          // 高德卫星瓦片（国内可访问，高清卫星图）
+          "amap-sat": {
             type:  "raster",
-            // 优先请求 512px 高清瓦片（@2x 原生支持），彻底消除放大像素化
             tiles: [
-              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              "https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+              "https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+              "https://webst03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+              "https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
             ],
-            tileSize:    512,
-            attribution: "© Esri · Maxar · GeoEye · Earthstar Geographics",
-            maxzoom:     23,
+            tileSize:    256,
+            attribution: "© 高德地图 · AutoNavi",
+            maxzoom:     18,
           },
-          // 叠加 Esri World Reference 标注图层（道路/地名，不影响卫星底图清晰度）
-          "esri-labels": {
+          // 高德路网/标注叠加层
+          "amap-labels": {
             type:  "raster",
             tiles: [
-              "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+              "https://webst01.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
+              "https://webst02.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
             ],
-            tileSize: 512,
-            maxzoom:  22,
+            tileSize: 256,
+            maxzoom:  18,
           },
         },
         layers: [
           {
-            id:      "esri-sat-layer",
+            id:      "amap-sat-layer",
             type:    "raster",
-            source:  "esri-sat",
+            source:  "amap-sat",
             minzoom: 0,
-            maxzoom: 24,
+            maxzoom: 19,
             paint: {
-              // linear 双线性插值：放大时平滑锐利，彻底消除马赛克像素化
-              "raster-resampling": "linear",
-              "raster-saturation": 0.2,    // 增强地表色彩饱和度
-              "raster-contrast":   0.12,
+              "raster-resampling":     "linear",
+              "raster-saturation":     0.15,
+              "raster-contrast":       0.1,
               "raster-brightness-min": 0.05,
             },
           },
           {
-            id:      "esri-labels-layer",
+            id:      "amap-labels-layer",
             type:    "raster",
-            source:  "esri-labels",
+            source:  "amap-labels",
             minzoom: 4,
-            maxzoom: 24,
-            paint: { "raster-opacity": 0.65 },
+            maxzoom: 19,
+            paint: { "raster-opacity": 0.7 },
           },
         ],
-        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+        glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
       },
       center,
       zoom:       2.5,
@@ -500,7 +503,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       // 国家边界
       map.addSource("countries", {
         type: "geojson",
-        data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+        data: "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson",
       });
       map.addLayer({
         id:     "countries-line",
@@ -525,7 +528,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       // 省级边界
       map.addSource("provinces", {
         type: "geojson",
-        data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson",
+        data: "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_1_states_provinces.geojson",
       });
       map.addLayer({
         id:     "provinces-line",
