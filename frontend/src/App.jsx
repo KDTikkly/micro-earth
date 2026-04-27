@@ -24,12 +24,12 @@ function FloatingDecorations() {
   return (
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
 
-      {/* 电光紫大波浪线 — 顶部横穿 */}
+      {/* 电子紫大波浪线 — 顶部横穿 */}
       <motion.div style={{ position: "absolute", top: "3%", left: "-5%" }}
         animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}>
         <svg width="900" height="60" viewBox="0 0 900 60" fill="none">
           <path d="M0,30 C80,5 160,55 240,30 C320,5 400,55 480,30 C560,5 640,55 720,30 C800,5 870,30 900,30"
-            stroke="#6200EE" strokeWidth="3.5" fill="none" strokeDasharray="12 6" />
+            stroke="#9370DB" strokeWidth="3.5" fill="none" strokeDasharray="12 6" />
         </svg>
       </motion.div>
 
@@ -38,40 +38,40 @@ function FloatingDecorations() {
         animate={{ y: [0, -18, 0], rotate: [0, 4, 0] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}>
         <svg width="96" height="84" viewBox="0 0 96 84" fill="none">
-          <polygon points="48,4 92,80 4,80" stroke="#FF0055" strokeWidth="3" fill="none" />
+          <polygon points="48,4 92,80 4,80" stroke="#FF69B4" strokeWidth="3" fill="none" />
         </svg>
       </motion.div>
 
-      {/* 明黄大圆环 */}
+      {/* 电光蓝大圆环 */}
       <motion.div style={{ position: "absolute", top: "6%", right: "5%" }}
         animate={{ y: [0, 14, 0], rotate: [0, -6, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}>
         <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="42" stroke="#FFEE00" strokeWidth="3.5" fill="none" />
+          <circle cx="50" cy="50" r="42" stroke="#00BFFF" strokeWidth="3.5" fill="none" />
         </svg>
       </motion.div>
 
-      {/* 终端绿小圆环 */}
+      {/* 霓虹粉小圆环 */}
       <motion.div style={{ position: "absolute", top: "5%", right: "16%" }}
         animate={{ y: [0, -12, 0], rotate: [0, 8, 0] }}
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2 }}>
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-          <circle cx="26" cy="26" r="20" stroke="#00FF00" strokeWidth="2.5" fill="none" />
+          <circle cx="26" cy="26" r="20" stroke="#FF69B4" strokeWidth="2.5" fill="none" />
         </svg>
       </motion.div>
 
-      {/* 电光紫空心菱形 */}
+      {/* 电子紫空心菱形 */}
       <motion.div style={{ position: "absolute", top: "52%", left: "1.5%" }}
         animate={{ y: [0, -10, 0], rotate: [45, 60, 45] }}
         transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}>
-        <div style={{ width: 22, height: 22, border: "3px solid #6200EE", transform: "rotate(45deg)" }} />
+        <div style={{ width: 22, height: 22, border: "3px solid #9370DB", transform: "rotate(45deg)" }} />
       </motion.div>
 
       {/* 霓虹粉实心方块 */}
       <motion.div style={{ position: "absolute", top: "44%", left: "1%" }}
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}>
-        <div style={{ width: 14, height: 14, background: "#FF0055", border: "2px solid #000" }} />
+        <div style={{ width: 14, height: 14, background: "#FF69B4", border: "2px solid #000" }} />
       </motion.div>
 
       {/* 明黄实心三角 */}
@@ -83,23 +83,23 @@ function FloatingDecorations() {
         </svg>
       </motion.div>
 
-      {/* 旋转十字 — 终端绿 */}
+      {/* 旋转十字 — 电光蓝 */}
       <motion.div style={{ position: "absolute", top: "38%", right: "3%" }}
         animate={{ rotate: [0, 360] }}
         transition={{ duration: 12, repeat: Infinity, ease: "linear" }}>
         <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-          <line x1="13" y1="0" x2="13" y2="26" stroke="#00FF00" strokeWidth="2.5" />
-          <line x1="0" y1="13" x2="26" y2="13" stroke="#00FF00" strokeWidth="2.5" />
+          <line x1="13" y1="0" x2="13" y2="26" stroke="#00BFFF" strokeWidth="2.5" />
+          <line x1="0" y1="13" x2="26" y2="13" stroke="#00BFFF" strokeWidth="2.5" />
         </svg>
       </motion.div>
 
-      {/* 底部霓虹橙波浪 */}
+      {/* 底部电子紫波浪 */}
       <motion.div style={{ position: "absolute", bottom: "4%", right: "20%" }}
         animate={{ x: [0, 10, 0] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}>
         <svg width="120" height="28" viewBox="0 0 120 28" fill="none">
           <path d="M0,14 C15,2 30,26 45,14 C60,2 75,26 90,14 C105,2 115,14 120,14"
-            stroke="#FF6600" strokeWidth="2.5" fill="none" />
+            stroke="#9370DB" strokeWidth="2.5" fill="none" />
         </svg>
       </motion.div>
     </div>
@@ -136,14 +136,14 @@ export default function App() {
 
   const nodeCount = geojsonData?.features?.length ?? 0;
 
-  // 系统状态色块配置（Memphis高饱和撞色）
+  // 系统状态色块配置（Lyria 角色高饱和色系）
   const sysItems = [
-    { label: "BACKEND",  val: ":8000",      bg: "#00FF00", color: "#000" },
-    { label: "FRONTEND", val: ":3000",      bg: "#00FFFF", color: "#000" },
-    { label: "MAP",      val: "GLOBE·3D",   bg: "#FFEE00", color: "#000" },
-    { label: "API",      val: "OPEN-METEO", bg: "#FF0055", color: "#fff" },
-    { label: "GRAPH",    val: "LANGGRAPH",  bg: "#6200EE", color: "#fff" },
-    { label: "NODES",    val: nodeCount ? `${nodeCount}pts` : "—", bg: "#FF6600", color: "#fff" },
+    { label: "BACKGROUND", val: "GRID·BG",    bg: "#FF69B4", color: "#000" },  // 霓虹粉
+    { label: "FRONTEND",   val: ":3000",       bg: "#00BFFF", color: "#000" },  // 电光蓝
+    { label: "MAP",        val: "GLOBE·3D",    bg: "#9370DB", color: "#fff" },  // 电子紫
+    { label: "OPEN-METEO", val: "WEATHER·API", bg: "#FFEE00", color: "#000" },  // 明黄
+    { label: "GRAPH",      val: "LANGGRAPH",   bg: "#FF69B4", color: "#000" },  // 霓虹粉
+    { label: "NODES",      val: nodeCount ? `${nodeCount}pts` : "—", bg: "#00BFFF", color: "#000" },  // 电光蓝
   ];
 
   return (
@@ -178,7 +178,7 @@ export default function App() {
             letterSpacing: "0.06em", fontWeight: 700,
             border: "1.5px solid #fff", padding: "1px 6px",
           }}>
-            v0.6.0 · PHASE 6
+            v0.7.0 · PHASE 7
           </span>
         </div>
 
@@ -397,10 +397,10 @@ export default function App() {
                 ◈ GEO VIZ — {region.toUpperCase()} WEATHER GRID
               </span>
               <div style={{
-                background: "#000", color: "#00FF00", border: "none",
+                background: "#FF69B4", color: "#000", border: "none",
                 fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 900,
                 padding: "2px 8px", letterSpacing: "0.06em",
-                boxShadow: "0 0 8px #00FF00, 0 0 16px rgba(0,255,0,0.3)",
+                boxShadow: "0 0 8px #FF69B4, 0 0 16px rgba(255,105,180,0.3)",
               }}>MAP: ON</div>
             </div>
             {/* 地图本体 */}
@@ -463,7 +463,7 @@ export default function App() {
         height: 36, flexShrink: 0, padding: "0 16px",
       }}>
         <span style={{ color: "#FFEE00", fontWeight: 700 }}>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#FF0055", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 5</span>
+        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 7</span>
         <span style={{ color: geojsonData ? "#00FF00" : "#333", fontWeight: 700 }}>
           {geojsonData ? `✓ open-meteo.com` : "// NO DATA"}
         </span>

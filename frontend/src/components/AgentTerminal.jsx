@@ -126,7 +126,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           const nodeColor = NODE_COLORS[log.node] ?? NODE_COLORS[log.event] ?? "#555";
           return (
             <div key={i} style={{ marginBottom: 3 }}>
-              <span style={{ color: "#aaa", fontSize: 13 }}>[{log.ts}] </span>
+              <span style={{ color: "#00BFFF", fontSize: 13 }}>[{log.ts}] </span>
               <span style={{ color: nodeColor, fontWeight: 700, fontSize: 14 }}>{log.message}</span>
             </div>
           );
@@ -195,7 +195,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           <div style={{
             position: "absolute", inset: 0,
             transform: "translate(4px, 4px)",
-            background: "#00AA00",
+            background: "#CC9900",
             border: "2px solid #000",
           }} />
           <button
@@ -205,14 +205,14 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
               position: "relative",
               width: "100%",
               padding: "10px 0",
-              background: isRunning ? "#333" : "#00FF00",
+              background: isRunning ? "#333" : "#FFEE00",
               color: isRunning ? "#555" : "#000",
               border: "2px solid #000",
               fontFamily: "'Courier New', monospace",
               fontWeight: 900, fontSize: 15,
               letterSpacing: "0.08em", textTransform: "uppercase",
               cursor: isRunning ? "not-allowed" : "pointer",
-              boxShadow: isRunning ? "none" : "0 0 10px rgba(0,255,0,0.5)",
+              boxShadow: isRunning ? "none" : "0 0 10px rgba(255,238,0,0.5)",
             }}
             onMouseEnter={(e) => { if (!isRunning) e.currentTarget.style.transform = "translate(2px,2px)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translate(0,0)"; }}
@@ -223,20 +223,20 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           </button>
         </div>
 
-        {/* CLEAR 按钮 */}
+        {/* CLEAR 按钮 — 明黄底黑字 */}
         <div style={{ position: "relative" }}>
           <div style={{
             position: "absolute", inset: 0,
             transform: "translate(3px, 3px)",
-            background: "#AA0033", border: "2px solid #000",
+            background: "#CC9900", border: "2px solid #000",
           }} />
           <button
             onClick={clearLogs}
             style={{
               position: "relative",
               padding: "10px 18px",
-              background: "#FF0055",
-              color: "#fff",
+              background: "#FFEE00",
+              color: "#000",
               border: "2px solid #000",
               fontFamily: "'Courier New', monospace",
               fontWeight: 900, fontSize: 14,
