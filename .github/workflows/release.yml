@@ -136,6 +136,13 @@ jobs:
           npm version $VERSION --no-git-tag-version --allow-same-version
 
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          EXISTING=$(npm view @kdtikkly/micro-earth@$VERSION version --registry https://npm.pkg.github.com 2>/dev/null || echo "")
+          if [ "$EXISTING" = "$VERSION" ]; then
+            echo "Version $VERSION already published, skipping."
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
