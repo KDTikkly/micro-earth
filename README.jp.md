@@ -18,7 +18,7 @@
 ![Phase](https://img.shields.io/badge/Phase-11.2%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
-🌐 言語：[简体中文](./README.md) · [繁體中文](./README.zh-TW.md) · [English](./README.en.md) · **日本語** · [한국어](./README.ko.md)
+🌐 言語：[简体中文](./README.md) · [繁體中文](./README.tw.md) · [English](./README.en.md) · **日本語** · [한국어](./README.kr.md)
 
 ---
 
