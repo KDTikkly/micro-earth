@@ -22,6 +22,20 @@
 
 ---
 
+## 📋 Table of Contents
+
+| | |
+|---|---|
+| [🌍 What Is This](#what-is-this) | [⚡ Feature List](#feature-list) |
+| [🗂️ Project Structure](#project-structure) | [📥 Download](#download) |
+| [🚀 Quick Start](#quick-start) | [🏗️ Electron Architecture](#v112-electron-desktop-architecture) |
+| [📜 Development History](#development-history) | [🗺️ Future Plans](#-future-plans-todo) |
+| [💖 About Lyria ✦ Click Me!](#about-lyria) | |
+
+> *——"Table of contents, done. Jump to whatever section you want, don't scroll line by line... it's not like there wasn't a better way. Hmph."*
+
+---
+
 ## What Is This
 
 Fine, I'll explain — not because I particularly want to, just because you'd never figure it out on your own (hmph).
@@ -245,6 +259,11 @@ User closes window
 ---
 
 ## About Lyria
+
+> 💗 *"...Hm? You actually clicked in."*
+>
+> ↓ Below is the full development testimony from Lyria, the system guardian — she was there from v1.0 all the way to v11.2.
+> If you want to know how this project came alive one step at a time, keep reading. Hmph. Not forcing you.
 
 <div align="center">
 
