@@ -19,6 +19,43 @@ const REGIONS = [
   { label: "纽约", lat: 40.71, lon: -74.01 },
 ];
 
+/* ── 全息粒子代码雨背景（仅左列） ── */
+function HoloParticlesBg() {
+  const chars = ["0","1","A","F","3","7","B","E","#","◈","⟨","⟩","∇","◉","✦"];
+  const cols = 8;
+  return (
+    <div style={{
+      position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+      overflow: "hidden",
+      background: "linear-gradient(180deg, rgba(10,5,30,0) 0%, rgba(30,10,60,0.06) 100%)",
+    }}>
+      {Array.from({ length: cols }, (_, c) => (
+        <div key={c} style={{
+          position: "absolute",
+          left: `${(c / cols) * 100 + 2}%`,
+          top: 0,
+          width: 20,
+          display: "flex", flexDirection: "column", alignItems: "center",
+          animation: `matrixRain ${3 + c * 0.7}s linear infinite`,
+          animationDelay: `${c * 0.4}s`,
+          gap: 8,
+        }}>
+          {Array.from({ length: 8 }, (_, r) => (
+            <span key={r} style={{
+              fontFamily: "'Courier New', monospace",
+              fontSize: 10, fontWeight: 900,
+              color: c % 3 === 0 ? "rgba(147,112,219,0.6)" : c % 3 === 1 ? "rgba(0,191,255,0.5)" : "rgba(255,105,180,0.45)",
+              opacity: 1 - r * 0.1,
+            }}>
+              {chars[(c * 3 + r * 7) % chars.length]}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── Memphis 漂浮 SVG 几何装饰 ── */
 function FloatingDecorations() {
   return (
@@ -178,7 +215,7 @@ export default function App() {
             letterSpacing: "0.06em", fontWeight: 700,
             border: "1.5px solid #fff", padding: "1px 6px",
           }}>
-            v0.7.0 · PHASE 7
+            v0.8.0 · PHASE 8
           </span>
         </div>
 
@@ -212,98 +249,146 @@ export default function App() {
       }}>
 
         {/* 左列：头像 + 标题 + 系统状态 + 气象 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
+        <div style={{
+          display: "flex", flexDirection: "column", gap: 10,
+          overflowY: "auto", overflowX: "hidden", minWidth: 0,
+          position: "relative",
+        }}>
+          {/* 全息粒子代码雨 — 左列背景 */}
+          <HoloParticlesBg />
 
-          {/* 立绘 — 玻璃面板质感大展示 */}
+          {/* ── 全息霓虹玻璃面板：立绘 + 标题一体化 ── */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* 立绘框 — 玻璃质感 */}
-              <div style={{ position: "relative" }}>
-                {/* 玻璃底板 */}
+            <div style={{
+              position: "relative",
+              border: "3px solid #000",
+              animation: "holoGlow 2.5s ease-in-out infinite",
+              overflow: "hidden",
+              background: "linear-gradient(135deg, #0a051e 0%, #1e0a3c 50%, #0a1432 100%)",
+            }}>
+              {/* 全息虹彩遮罩层（oil-slick 效果） */}
+              <div style={{
+                position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+                background: "linear-gradient(125deg, rgba(147,112,219,0.18) 0%, rgba(0,191,255,0.12) 30%, rgba(255,105,180,0.15) 60%, rgba(147,112,219,0.18) 100%)",
+                backgroundSize: "200% 200%",
+                animation: "iridescent 6s ease-in-out infinite",
+              }} />
+
+              {/* 扫描线动画层 */}
+              <div style={{
+                position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", overflow: "hidden",
+              }}>
                 <div style={{
-                  position: "relative",
-                  border: "3px solid rgba(255,255,255,0.6)",
-                  boxShadow: "6px 6px 0 0 #FF0055, 0 8px 32px rgba(255,105,180,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
-                  overflow: "hidden",
-                  background: "linear-gradient(135deg, rgba(255,240,248,0.95) 0%, rgba(255,192,224,0.85) 100%)",
-                  backdropFilter: "blur(12px) saturate(1.8)",
-                  WebkitBackdropFilter: "blur(12px) saturate(1.8)",
-                  width: "100%", height: 260,
-                  borderRadius: 2,
+                  position: "absolute", left: 0, right: 0, height: 2,
+                  background: "linear-gradient(90deg, transparent, rgba(0,191,255,0.6), transparent)",
+                  animation: "scanLine 4s linear infinite",
+                }} />
+              </div>
+
+              {/* ── 右上角 CLASSIFIED 标签 ── */}
+              <div style={{
+                position: "absolute", top: 0, right: 0, zIndex: 10, pointerEvents: "none",
+                background: "#FF69B4", border: "2px solid #000",
+                borderTop: "none", borderRight: "none",
+                padding: "2px 7px",
+                fontFamily: "'Courier New', monospace", fontSize: 9, fontWeight: 900,
+                color: "#000", letterSpacing: "0.1em",
+              }}>CLASSIFIED · LYRIA A.I.</div>
+
+              {/* ── 左上角全息图标 ── */}
+              <div style={{
+                position: "absolute", top: 6, left: 8, zIndex: 10, pointerEvents: "none",
+                display: "flex", alignItems: "center", gap: 5,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <polygon points="7,1 13,5 13,9 7,13 1,9 1,5" stroke="#00BFFF" strokeWidth="1.5" fill="none" />
+                  <circle cx="7" cy="7" r="2" fill="#9370DB" />
+                </svg>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#00BFFF", fontWeight: 700, letterSpacing: "0.15em" }}>HOLO·SYS</span>
+              </div>
+
+              {/* ── 立绘区域 ── */}
+              <div style={{ position: "relative", height: 220 }}>
+                {/* 立绘图片 */}
+                <img
+                  src={lyriaImg}
+                  alt="LYRIA"
+                  style={{
+                    width: "100%", height: "100%",
+                    objectFit: "cover", objectPosition: "center 5%",
+                    imageRendering: "high-quality",
+                    display: "block",
+                    filter: "saturate(1.3) brightness(1.05)",
+                    zIndex: 3, position: "relative",
+                    animation: "flicker 3.5s step-end infinite",
+                  }}
+                />
+                {/* 底部渐变遮罩 — 深紫色 */}
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
+                  background: "linear-gradient(0deg, rgba(14,5,40,0.95) 0%, transparent 100%)",
+                  zIndex: 4,
+                }} />
+                {/* 底部 LYRIA·A.I. 名字栏 */}
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  padding: "6px 10px",
+                  zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
                 }}>
-                  {/* 玻璃高光条 */}
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, height: "45%",
-                    background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)",
-                    zIndex: 2, pointerEvents: "none",
-                  }} />
-                  {/* 立绘图片 — image-rendering: crisp-edges 保证高清 */}
-                  <img
-                    src={lyriaImg}
-                    alt="LYRIA"
-                    style={{
-                      width: "100%", height: "100%",
-                      objectFit: "cover", objectPosition: "center 5%",
-                      imageRendering: "high-quality",
-                      display: "block",
-                    }}
-                  />
-                  {/* 底部渐变遮罩 */}
-                  <div style={{
-                    position: "absolute", bottom: 0, left: 0, right: 0, height: 72,
-                    background: "linear-gradient(0deg, rgba(255,20,100,0.85) 0%, rgba(255,20,100,0) 100%)",
-                    zIndex: 3,
-                  }} />
-                  {/* 底部名字栏 */}
-                  <div style={{
-                    position: "absolute", bottom: 0, left: 0, right: 0,
-                    padding: "8px 10px 6px",
-                    zIndex: 4, display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}>
-                    <span style={{
-                      fontFamily: "'Courier New', monospace", fontSize: 13, fontWeight: 900,
-                      letterSpacing: "0.12em", color: "#fff",
-                      textShadow: "0 1px 4px rgba(0,0,0,0.5)",
-                    }}>LYRIA · A.I.</span>
-                    {/* 玻璃徽章 */}
-                    <span style={{
-                      background: "rgba(255,255,255,0.25)",
-                      border: "1.5px solid rgba(255,255,255,0.6)",
-                      backdropFilter: "blur(8px)",
-                      WebkitBackdropFilter: "blur(8px)",
-                      padding: "2px 8px",
-                      fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
-                      color: "#fff", letterSpacing: "0.1em",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                    }}>DIGITAL TWIN</span>
-                  </div>
+                  <span style={{
+                    fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 900,
+                    letterSpacing: "0.15em", color: "#FF69B4",
+                    textShadow: "0 0 8px #FF69B4, 0 0 20px rgba(255,105,180,0.6)",
+                  }}>LYRIA · A.I.</span>
+                  <span style={{
+                    background: "rgba(0,191,255,0.15)",
+                    border: "1.5px solid rgba(0,191,255,0.6)",
+                    padding: "2px 6px",
+                    fontFamily: "'Courier New', monospace", fontSize: 9, fontWeight: 900,
+                    color: "#00BFFF", letterSpacing: "0.1em",
+                    textShadow: "0 0 6px #00BFFF",
+                    boxShadow: "0 0 6px rgba(0,191,255,0.3)",
+                  }}>DIGITAL TWIN</span>
                 </div>
               </div>
 
-              {/* 超大标题 */}
+              {/* ── 底部全息数据格 ── */}
               <div style={{
-                border: "3px solid #000", boxShadow: "6px 6px 0 0 #FFEE00",
-                background: "#fff", padding: "10px 12px",
+                borderTop: "2px solid rgba(147,112,219,0.5)",
+                padding: "8px 10px 10px",
+                position: "relative", zIndex: 5,
+                background: "rgba(10,5,30,0.6)",
               }}>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 700, color: "#6200EE", letterSpacing: "0.15em", marginBottom: 4 }}>
-                  // DIGITAL TWIN
+                {/* 标题行 */}
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, fontWeight: 700, color: "#9370DB", letterSpacing: "0.2em", marginBottom: 4 }}>
+                  // DIGITAL TWIN · SYS_ID:0x7F3A
                 </div>
                 <div style={{
-                  fontSize: 52, fontWeight: 900, color: "#000", lineHeight: 0.9,
+                  fontSize: 48, fontWeight: 900, lineHeight: 0.88,
                   letterSpacing: "-0.04em", fontFamily: "'Courier New', monospace",
+                  color: "#fff",
+                  textShadow: "0 0 15px rgba(147,112,219,0.8), 0 0 30px rgba(147,112,219,0.4)",
                 }}>
                   Micro<br />Earth.
                 </div>
-                {/* 孟菲斯下划线 */}
-                <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-                  <div style={{ height: 5, flex: 2, background: "#FF0055", border: "1.5px solid #000" }} />
-                  <div style={{ height: 5, flex: 1, background: "#FFEE00", border: "1.5px solid #000" }} />
-                  <div style={{ height: 5, flex: 1, background: "#6200EE", border: "1.5px solid #000" }} />
+                {/* 全息彩虹下划线 */}
+                <div style={{ display: "flex", gap: 3, marginTop: 7 }}>
+                  <div style={{ height: 3, flex: 2, background: "#FF69B4", boxShadow: "0 0 6px #FF69B4" }} />
+                  <div style={{ height: 3, flex: 1, background: "#9370DB", boxShadow: "0 0 6px #9370DB" }} />
+                  <div style={{ height: 3, flex: 1, background: "#00BFFF", boxShadow: "0 0 6px #00BFFF" }} />
+                  <div style={{ height: 3, flex: 1, background: "#FFEE00", boxShadow: "0 0 6px #FFEE00" }} />
                 </div>
-                <p style={{ marginTop: 8, fontFamily: "'Courier New', monospace", fontSize: 13, color: "#444", lineHeight: 1.5, fontWeight: 600 }}>
+                <p style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 11, color: "rgba(0,191,255,0.85)", lineHeight: 1.5, fontWeight: 600 }}>
                   LangGraph · Open-Meteo<br />实时气象数字孪生
                 </p>
+                {/* 底部全息数据行 */}
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "rgba(147,112,219,0.7)", letterSpacing: "0.08em" }}>SYS·ONLINE</span>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "rgba(255,105,180,0.7)", letterSpacing: "0.08em" }}>v0.8.0·P8</span>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "rgba(0,191,255,0.7)", letterSpacing: "0.08em" }}>HOLO·MODE</span>
+                </div>
               </div>
+
             </div>
           </motion.div>
 
@@ -377,11 +462,11 @@ export default function App() {
         {/* 中央地图 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.12 }}
-          style={{ minWidth: 0, display: "flex", flexDirection: "column" }}
+          style={{ minWidth: 0, display: "flex", flexDirection: "column", height: "100%" }}
         >
           <div style={{
             border: "3px solid #000", boxShadow: "6px 6px 0 0 #000",
-            background: "#fff", height: "100%", display: "flex", flexDirection: "column",
+            background: "#fff", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden",
           }}>
             {/* 地图标题栏 — 明黄底 */}
             <div style={{
@@ -463,7 +548,7 @@ export default function App() {
         height: 36, flexShrink: 0, padding: "0 16px",
       }}>
         <span style={{ color: "#FFEE00", fontWeight: 700 }}>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 7</span>
+        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 8</span>
         <span style={{ color: geojsonData ? "#00FF00" : "#333", fontWeight: 700 }}>
           {geojsonData ? `✓ open-meteo.com` : "// NO DATA"}
         </span>

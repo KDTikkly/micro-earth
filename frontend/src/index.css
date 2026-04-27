@@ -145,6 +145,34 @@ body {
 ::-webkit-scrollbar-track { background: #f5f5f5; border-left: 1px solid var(--wireframe); }
 ::-webkit-scrollbar-thumb { background: var(--ink-black); }
 
+/* ── 全息面板动画 ─────────────────────────────────────────── */
+@keyframes holoGlow {
+  0%, 100% { box-shadow: 0 0 12px #9370DB, 0 0 30px rgba(147,112,219,0.5), 8px 8px 0 0 rgba(255,105,180,1); }
+  50%       { box-shadow: 0 0 22px #9370DB, 0 0 55px rgba(147,112,219,0.75), 8px 8px 0 0 rgba(255,105,180,1); }
+}
+@keyframes iridescent {
+  0%   { background-position: 0% 50%;   filter: hue-rotate(0deg); }
+  50%  { background-position: 100% 50%; filter: hue-rotate(40deg); }
+  100% { background-position: 0% 50%;   filter: hue-rotate(0deg); }
+}
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(400px); }
+}
+@keyframes flicker {
+  0%, 94%, 100% { opacity: 1; }
+  95%            { opacity: 0.82; }
+  96%            { opacity: 0.58; }
+  97%            { opacity: 0.9; }
+  98%            { opacity: 0.48; }
+  99%            { opacity: 0.95; }
+}
+@keyframes matrixRain {
+  0%   { transform: translateY(-100%); opacity: 1; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(400px); opacity: 0; }
+}
+
 /* ── react-globe.gl / Three.js Canvas 覆盖 ───────────────── */
 canvas {
   outline: none;

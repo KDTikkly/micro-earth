@@ -9,14 +9,17 @@ export default {
         "lyria-blue":   "#00BFFF",   // 电光蓝 — 丝带
         "lyria-purple": "#9370DB",   // 电子紫 — 眼珠
         "lyria-yellow": "#FFEE00",   // 明黄   — 点缀色
+        // ── 全息色 ──
+        "m-holo-purple": "#9370DB",  // 全息紫
+        "m-holo-blue":   "#00BFFF",  // 全息蓝
         // ── Cyber-Lab Memphis 高饱和撞色系 ──
-        "m-yellow":  "#FFEE00",   // 明黄
-        "m-pink":    "#FF69B4",   // 霓虹粉（升级至 Lyria 发色）
-        "m-purple":  "#9370DB",   // 电子紫（升级至 Lyria 眼色）
-        "m-green":   "#00FF00",   // 终端绿/霓虹绿
-        "m-black":   "#000000",   // 纯黑
-        "m-cyan":    "#00BFFF",   // 电光蓝（升级至 Lyria 丝带色）
-        "m-orange":  "#FF6600",   // 霓虹橙
+        "m-yellow":  "#FFEE00",
+        "m-pink":    "#FF69B4",
+        "m-purple":  "#9370DB",
+        "m-green":   "#00FF00",
+        "m-black":   "#000000",
+        "m-cyan":    "#00BFFF",
+        "m-orange":  "#FF6600",
         // 保留旧别名（渐进迁移）
         "paper-white":   "#FDFDFD",
         "ink-black":     "#1A1A1A",
@@ -52,6 +55,11 @@ export default {
         "glow-yellow": "0 0 8px #FFEE00, 0 0 20px rgba(255,238,0,0.4)",
         "glow-purple": "0 0 8px #9370DB, 0 0 20px rgba(147,112,219,0.4)",
         "glow-blue":   "0 0 8px #00BFFF, 0 0 20px rgba(0,191,255,0.4)",
+        // 全息面板 neon 阴影
+        "neon-purple": "0 0 12px #9370DB, 0 0 30px rgba(147,112,219,0.5), 0 0 60px rgba(147,112,219,0.2)",
+        "neon-blue":   "0 0 12px #00BFFF, 0 0 30px rgba(0,191,255,0.5), 0 0 60px rgba(0,191,255,0.2)",
+        "neon-pink":   "0 0 12px #FF69B4, 0 0 30px rgba(255,105,180,0.5), 0 0 60px rgba(255,105,180,0.2)",
+        "holo-panel":  "0 0 12px #9370DB, 0 0 30px rgba(147,112,219,0.4), 8px 8px 0 0 rgba(255,105,180,1)",
       },
       backgroundImage: {
         // 白底细网格（保留）
@@ -69,12 +77,16 @@ export default {
         "dot-cross":         "32px 32px",
       },
       animation: {
-        "float-slow":  "floatY 7s ease-in-out infinite",
-        "float-mid":   "floatY 4.5s ease-in-out infinite",
-        "float-rev":   "floatYRev 5.5s ease-in-out infinite",
-        "spin-slow":   "spin 18s linear infinite",
-        "pulse-neon":  "pulseNeon 1.8s ease-in-out infinite",
-        "btn-press":   "btnPress 0.1s ease-in-out",
+        "float-slow":    "floatY 7s ease-in-out infinite",
+        "float-mid":     "floatY 4.5s ease-in-out infinite",
+        "float-rev":     "floatYRev 5.5s ease-in-out infinite",
+        "spin-slow":     "spin 18s linear infinite",
+        "pulse-neon":    "pulseNeon 1.8s ease-in-out infinite",
+        "btn-press":     "btnPress 0.1s ease-in-out",
+        "flicker":       "flicker 3.5s step-end infinite",
+        "iridescent":    "iridescent 6s ease-in-out infinite",
+        "scan-line":     "scanLine 4s linear infinite",
+        "holo-glow":     "holoGlow 2.5s ease-in-out infinite",
       },
       keyframes: {
         floatY: {
@@ -92,6 +104,26 @@ export default {
         btnPress: {
           "0%":   { transform: "translate(0,0)", boxShadow: "5px 5px 0 0 #000" },
           "100%": { transform: "translate(5px,5px)", boxShadow: "0px 0px 0 0 #000" },
+        },
+        flicker: {
+          "0%, 95%, 100%": { opacity: "1" },
+          "96%":            { opacity: "0.85" },
+          "97%":            { opacity: "0.6" },
+          "98%":            { opacity: "0.95" },
+          "99%":            { opacity: "0.5" },
+        },
+        iridescent: {
+          "0%":   { backgroundPosition: "0% 50%", filter: "hue-rotate(0deg)" },
+          "50%":  { backgroundPosition: "100% 50%", filter: "hue-rotate(40deg)" },
+          "100%": { backgroundPosition: "0% 50%", filter: "hue-rotate(0deg)" },
+        },
+        scanLine: {
+          "0%":   { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100vh)" },
+        },
+        holoGlow: {
+          "0%, 100%": { boxShadow: "0 0 12px #9370DB, 0 0 30px rgba(147,112,219,0.5), 8px 8px 0 0 rgba(255,105,180,1)" },
+          "50%":       { boxShadow: "0 0 20px #9370DB, 0 0 50px rgba(147,112,219,0.7), 8px 8px 0 0 rgba(255,105,180,1)" },
         },
       },
     },
