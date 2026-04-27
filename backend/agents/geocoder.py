@@ -3,6 +3,8 @@ Geocoder Agent — Phase 3
 使用 OpenStreetMap Nominatim 将城市名称转换为经纬度
 免费、无需 API Key
 """
+# -*- coding: utf-8 -*-
+import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 import httpx
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"

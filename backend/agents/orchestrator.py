@@ -4,6 +4,24 @@ LangGraph StateGraph:
   Input -> Geocoder -> DataRetriever -> PhysicsEngine -> EntitySimulator -> Output
 新增：EntitySimulator 节点（多智能体自主响应与动态资产推演）
 """
+# ── UTF-8 编码保障（防 Windows GBK 报错）──────────────────────────────────────
+import os as _os
+import sys as _sys
+import io as _io
+_os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+_os.environ.setdefault("PYTHONUTF8", "1")
+for _s in (_sys.stdout, _sys.stderr):
+    if _s and hasattr(_s, "reconfigure"):
+        try: _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception: pass
+if hasattr(_sys.stdout, "buffer"):
+    try: _sys.stdout = _io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    except Exception: pass
+if hasattr(_sys.stderr, "buffer"):
+    try: _sys.stderr = _io.TextIOWrapper(_sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    except Exception: pass
+# ─────────────────────────────────────────────────────────────────────────────
+
 import asyncio
 import json
 import sys

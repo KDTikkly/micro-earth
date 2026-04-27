@@ -3,6 +3,8 @@ DataRetriever Agent — Phase 2
 使用 httpx 异步请求 Open-Meteo（无需 API Key）
 获取深圳未来 24 小时气温 + 降水概率，输出标准 GeoJSON FeatureCollection
 """
+# -*- coding: utf-8 -*-
+import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 import httpx
 
 # 深圳默认坐标

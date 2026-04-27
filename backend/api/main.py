@@ -1,5 +1,5 @@
 """
-Micro-Earth FastAPI 主应用 — Phase 2
+Micro-Earth FastAPI 主应用 — Phase 4
 - GET  /health            健康检查
 - WS   /ws/agent-stream   WebSocket 实时推流（日志 + GeoJSON）
 """
@@ -9,22 +9,35 @@ import os
 import sys
 import io
 
-# ── Windows GBK 编码修复：强制 stdout/stderr 使用 UTF-8 ──────────────────────
-if sys.stdout and hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
-if sys.stderr and hasattr(sys.stderr, "reconfigure"):
-    try:
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
-# 兜底：直接替换为 UTF-8 TextIOWrapper
+# ── Windows GBK 编码修复：强制进程级 UTF-8，必须在所有 import 之前执行 ──────
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+os.environ.setdefault("PYTHONUTF8", "1")
+
+# reconfigure 方式（Python 3.7+）
+for _stream_name in ("stdout", "stderr"):
+    _s = getattr(sys, _stream_name, None)
+    if _s is not None and hasattr(_s, "reconfigure"):
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+# 兜底：直接替换为 UTF-8 TextIOWrapper（适用于 Windows IDLE / pytest 等场景）
 if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    try:
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
+    except Exception:
+        pass
 if hasattr(sys.stderr, "buffer"):
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    try:
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
+    except Exception:
+        pass
+
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware

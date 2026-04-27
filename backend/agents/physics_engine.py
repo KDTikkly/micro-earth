@@ -3,6 +3,8 @@ PhysicsEngine Agent — Phase 3
 极端天气风险指数推演（Extreme Weather Risk Index, 0~100）
 公式整合温度、降水概率、风速等多维度指标
 """
+# -*- coding: utf-8 -*-
+import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 
 def compute_indices(raw: dict) -> dict:

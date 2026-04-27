@@ -4,6 +4,9 @@ EntitySimulator Agent — Phase 4
 
 在目标城市周围生成 100 个 Kinetic Entities，受环境风险驱动资产老化与恐慌性交易。
 """
+# -*- coding: utf-8 -*-
+import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
 import random
 import math
 import time
