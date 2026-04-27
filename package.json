@@ -1,0 +1,26 @@
+{
+  "name": "@kdtikkly/micro-earth",
+  "version": "11.2.0",
+  "description": "Lyria A.I. · Micro-Earth Digital Twin Simulation Platform",
+  "author": "Lyria A.I. Research Lab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KDTikkly/micro-earth.git"
+  },
+  "homepage": "https://github.com/KDTikkly/micro-earth#readme",
+  "keywords": [
+    "digital-twin",
+    "earth",
+    "simulation",
+    "electron",
+    "gis",
+    "maplibre"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "README.md"
+  ]
+}
