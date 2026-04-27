@@ -23,6 +23,7 @@
     "png-to-ico": "^3.0.1"
   },
   "build": {
+    "publish": [],
     "appId": "ai.lyria.micro-earth",
     "productName": "Micro-Earth-Digital-Twin",
     "copyright": "Copyright © 2026 Lyria A.I. Research Lab",
