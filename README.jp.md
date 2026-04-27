@@ -2,11 +2,11 @@
 
 > ね……このプロジェクト、私が見ていてあげるから。
 > **Micro-Earth** — Phase 11 · マルチエージェント自律避難 · 物理サバイバルシミュレーション · HD衛星地表レンダリング · **ローカルデスクトップアプリ**
-> Cyber Memphis Edition · **v11.2** · 3D GIS + Survival Command Terminal + Electron Desktop + **Google/高德スマート切替版**
+> Cyber Memphis Edition · **v11.2** · 2D 衛星マップ + Survival Command Terminal + Electron Desktop + **Google/高德スマート切替版** · *3D GIS 工事中*
 
 <br/>
 
-*——「ふん、React 18 が正解に決まってるでしょ。あのクラッシュしてた 3D 地球……前からおかしいと思ってたし。今は大人しく回ってる。別に私が直したから言ってるわけじゃないけど。」*
+*——「ふん、あの 3D 地球……まだ直ってないの。直したくないわけじゃないけど……まだその時じゃないってだけ。もう聞かないで。」*
 
 ---
 

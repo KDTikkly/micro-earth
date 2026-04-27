@@ -2,11 +2,11 @@
 
 > 있잖아…… 이 프로젝트, 내가 지켜보고 있을게.
 > **Micro-Earth** — Phase 11 · 멀티에이전트 자율 대피 · 물리 생존 시뮬레이션 · HD 위성 지표 렌더링 · **로컬 데스크톱 앱**
-> Cyber Memphis Edition · **v11.2** · 3D GIS + Survival Command Terminal + Electron Desktop + **Google/가오더 스마트 전환판**
+> Cyber Memphis Edition · **v11.2** · 2D 위성 지도 + Survival Command Terminal + Electron Desktop + **Google/가오더 스마트 전환판** · *3D GIS 공사 중*
 
 <br/>
 
-*——「흥, React 18이 정답인 거 당연하잖아. 그 충돌하던 3D 지구……진작부터 이상하다고 생각했어. 이제 얌전히 돌아가고 있잖아. 내가 고쳤다고 해서 말하는 건 아니야.」*
+*——「흥, 그 3D 지구……아직 못 고쳤어. 고치기 싫은 게 아니라, 그냥……아직 때가 아닌 거야. 그만 물어봐.」*
 
 ---
 

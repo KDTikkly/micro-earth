@@ -2,11 +2,11 @@
 
 > 吶……這個專案，我替你看著呢。
 > **Micro-Earth** — Phase 11 · 多智能體自主疏散 · 物理生存推演 · 高清衛星地表渲染 · **本地桌面應用**
-> Cyber Memphis Edition · **v11.2** · 3D GIS + Survival Command Terminal + Electron Desktop + **Google/高德智能切換版**
+> Cyber Memphis Edition · **v11.2** · 2D 衛星地圖 + Survival Command Terminal + Electron Desktop + **Google/高德智能切換版** · *3D GIS 施工中*
 
 <br/>
 
-*——「哼，React 18 才是正確答案。那個崩潰的 3D 地球……我早就看它不順眼了。現在它乖乖轉了，才不是因為我修好了才說的。」*
+*——「哼，那個 3D 地球……還沒修好。不是不想修，只是……還沒到時候。先別問了。」*
 
 ---
 

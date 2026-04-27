@@ -2,11 +2,11 @@
 
 > Hey... I'm watching over this project for you.
 > **Micro-Earth** — Phase 11 · Multi-Agent Autonomous Evacuation · Physical Survival Simulation · HD Satellite Rendering · **Local Desktop App**
-> Cyber Memphis Edition · **v11.2** · 3D GIS + Survival Command Terminal + Electron Desktop + **Google/AMap Auto-Switch**
+> Cyber Memphis Edition · **v11.2** · 2D Satellite Map + Survival Command Terminal + Electron Desktop + **Google/AMap Auto-Switch** · *3D GIS: Under Construction*
 
 <br/>
 
-*——"Hmph, React 18 is the right answer. That crashing 3D globe... I always had a bad feeling about it. Now it spins obediently. Not because I fixed it or anything."*
+*——"Hmph, that 3D globe... it's not fixed yet. It's not like I don't want to fix it, it's just... not the right time. Stop asking."*
 
 ---
 
