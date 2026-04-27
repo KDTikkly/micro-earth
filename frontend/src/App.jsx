@@ -140,7 +140,7 @@ export default function App() {
   const sysItems = [
     { label: "BACKEND",  val: ":8000",      bg: "#00FF00", color: "#000" },
     { label: "FRONTEND", val: ":3000",      bg: "#00FFFF", color: "#000" },
-    { label: "MAP",      val: "LEAFLET",    bg: "#FFEE00", color: "#000" },
+    { label: "MAP",      val: "GLOBE·3D",   bg: "#FFEE00", color: "#000" },
     { label: "API",      val: "OPEN-METEO", bg: "#FF0055", color: "#fff" },
     { label: "GRAPH",    val: "LANGGRAPH",  bg: "#6200EE", color: "#fff" },
     { label: "NODES",    val: nodeCount ? `${nodeCount}pts` : "—", bg: "#FF6600", color: "#fff" },
@@ -156,10 +156,10 @@ export default function App() {
     }}>
       <FloatingDecorations />
 
-      {/* ── 顶部导航 — 电光紫底 ── */}
+      {/* ── 顶部导航 — 霓虹粉底 ── */}
       <header style={{
         position: "relative", zIndex: 10,
-        background: "#6200EE",
+        background: "linear-gradient(90deg, #FF69B4 0%, #FF1493 50%, #FF69B4 100%)",
         borderBottom: "3px solid #000",
         boxShadow: "0 4px 0 0 #000",
         padding: "8px 16px",
@@ -174,27 +174,27 @@ export default function App() {
             whiteSpace: "nowrap",
           }}>MICRO-EARTH</div>
           <span style={{
-            fontFamily: "'Courier New', monospace", fontSize: 12, color: "#FFEE00",
+            fontFamily: "'Courier New', monospace", fontSize: 12, color: "#fff",
             letterSpacing: "0.06em", fontWeight: 700,
-            border: "1.5px solid #FFEE00", padding: "1px 6px",
+            border: "1.5px solid #fff", padding: "1px 6px",
           }}>
-            v0.5.0 · PHASE 5
+            v0.6.0 · PHASE 6
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <StatusBadge status={status} />
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "'Courier New', monospace", fontSize: 13 }}>
-            <span style={{ color: "#FFEE00", fontWeight: 900 }}>RGN</span>
+            <span style={{ color: "#fff", fontWeight: 900 }}>RGN</span>
             <select value={region} onChange={handleRegionChange} style={{
-              background: "#000", border: "2.5px solid #FFEE00", boxShadow: "2px 2px 0 0 #FFEE00",
+              background: "#000", border: "2.5px solid #fff", boxShadow: "2px 2px 0 0 #000",
               fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 13,
               padding: "3px 8px", color: "#FFEE00", outline: "none", cursor: "pointer",
             }}>
               {REGIONS.map((r) => <option key={r.label} value={r.label}>{r.label}</option>)}
             </select>
           </div>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "#C5A3FF", whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap" }}>
             {lat.toFixed(2)}, {lon.toFixed(2)}
           </span>
         </div>
@@ -212,26 +212,71 @@ export default function App() {
       }}>
 
         {/* 左列：头像 + 标题 + 系统状态 + 气象 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, overflow: "hidden", minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
 
-          {/* 立绘 — 竖向大展示 */}
+          {/* 立绘 — 玻璃面板质感大展示 */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* 立绘框 */}
+              {/* 立绘框 — 玻璃质感 */}
               <div style={{ position: "relative" }}>
+                {/* 玻璃底板 */}
                 <div style={{
-                  border: "3px solid #000", boxShadow: "6px 6px 0 0 #FF0055",
-                  overflow: "hidden", background: "#e8f4fc",
-                  width: "100%", height: 200,
+                  position: "relative",
+                  border: "3px solid rgba(255,255,255,0.6)",
+                  boxShadow: "6px 6px 0 0 #FF0055, 0 8px 32px rgba(255,105,180,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  overflow: "hidden",
+                  background: "linear-gradient(135deg, rgba(255,240,248,0.95) 0%, rgba(255,192,224,0.85) 100%)",
+                  backdropFilter: "blur(12px) saturate(1.8)",
+                  WebkitBackdropFilter: "blur(12px) saturate(1.8)",
+                  width: "100%", height: 260,
+                  borderRadius: 2,
                 }}>
-                  <img src={lyriaImg} alt="LYRIA" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 8%" }} />
+                  {/* 玻璃高光条 */}
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: "45%",
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)",
+                    zIndex: 2, pointerEvents: "none",
+                  }} />
+                  {/* 立绘图片 — image-rendering: crisp-edges 保证高清 */}
+                  <img
+                    src={lyriaImg}
+                    alt="LYRIA"
+                    style={{
+                      width: "100%", height: "100%",
+                      objectFit: "cover", objectPosition: "center 5%",
+                      imageRendering: "high-quality",
+                      display: "block",
+                    }}
+                  />
+                  {/* 底部渐变遮罩 */}
+                  <div style={{
+                    position: "absolute", bottom: 0, left: 0, right: 0, height: 72,
+                    background: "linear-gradient(0deg, rgba(255,20,100,0.85) 0%, rgba(255,20,100,0) 100%)",
+                    zIndex: 3,
+                  }} />
+                  {/* 底部名字栏 */}
                   <div style={{
                     position: "absolute", bottom: 0, left: 0, right: 0,
-                    background: "#FF0055", borderTop: "2px solid #000",
-                    padding: "4px 8px", fontFamily: "'Courier New', monospace",
-                    fontSize: 12, fontWeight: 900, letterSpacing: "0.1em", color: "#fff",
-                    textAlign: "center",
-                  }}>LYRIA · A.I.</div>
+                    padding: "8px 10px 6px",
+                    zIndex: 4, display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span style={{
+                      fontFamily: "'Courier New', monospace", fontSize: 13, fontWeight: 900,
+                      letterSpacing: "0.12em", color: "#fff",
+                      textShadow: "0 1px 4px rgba(0,0,0,0.5)",
+                    }}>LYRIA · A.I.</span>
+                    {/* 玻璃徽章 */}
+                    <span style={{
+                      background: "rgba(255,255,255,0.25)",
+                      border: "1.5px solid rgba(255,255,255,0.6)",
+                      backdropFilter: "blur(8px)",
+                      WebkitBackdropFilter: "blur(8px)",
+                      padding: "2px 8px",
+                      fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
+                      color: "#fff", letterSpacing: "0.1em",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}>DIGITAL TWIN</span>
+                  </div>
                 </div>
               </div>
 

@@ -145,39 +145,18 @@ body {
 ::-webkit-scrollbar-track { background: #f5f5f5; border-left: 1px solid var(--wireframe); }
 ::-webkit-scrollbar-thumb { background: var(--ink-black); }
 
-/* ── Leaflet Blueprint 覆盖 ─────────────────────────────── */
-.leaflet-container {
-  background: #f8f8f6 !important;
-  font-family: 'Courier New', monospace !important;
+/* ── react-globe.gl / Three.js Canvas 覆盖 ───────────────── */
+canvas {
+  outline: none;
 }
-.leaflet-control-attribution {
-  background: #fff !important;
-  color: #888 !important;
-  border-top: 1px solid var(--wireframe) !important;
+/* 确保 Globe tooltip 使用孟菲斯字体 */
+.scene-tooltip {
+  background: rgba(0,0,0,0.85) !important;
+  color: #FFEE00 !important;
   font-family: 'Courier New', monospace !important;
-  font-size: 9px !important;
-}
-.leaflet-control-zoom a {
-  background: var(--accent-yellow) !important;
-  color: var(--ink-black) !important;
-  border: 2px solid var(--ink-black) !important;
-  border-radius: 0 !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
-  width: 28px !important;
-  height: 28px !important;
-  line-height: 24px !important;
-  box-shadow: 2px 2px 0 0 var(--ink-black) !important;
+  border: 1.5px solid #FF1493 !important;
+  padding: 4px 8px !important;
+  pointer-events: none !important;
 }
-.leaflet-control-zoom a:hover {
-  background: var(--accent-pink) !important;
-}
-.leaflet-popup-content-wrapper {
-  border: 2px solid var(--ink-black) !important;
-  border-radius: 0 !important;
-  box-shadow: 4px 4px 0 0 var(--ink-black) !important;
-  background: #fff !important;
-  color: var(--ink-black) !important;
-  font-family: 'Courier New', monospace !important;
-}
-.leaflet-popup-tip { background: var(--ink-black) !important; }
-.leaflet-popup-close-button { color: var(--ink-black) !important; font-size: 16px !important; }

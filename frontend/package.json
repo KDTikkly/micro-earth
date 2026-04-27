@@ -12,10 +12,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
     "framer-motion": "^12.38.0",
-    "leaflet": "^1.9.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-leaflet": "^5.0.0",
+    "react-globe.gl": "^2.37.1",
     "tailwindcss": "^4.2.4",
     "zustand": "^5.0.12"
   },
