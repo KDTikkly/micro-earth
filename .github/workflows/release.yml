@@ -37,9 +37,8 @@ jobs:
 
       - name: Build Windows NSIS installer
         working-directory: electron
-        run: npx electron-builder --win --x64 --publish never
+        run: npx electron-builder --win --x64
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
 
@@ -95,9 +94,8 @@ jobs:
 
       - name: Build macOS DMG
         working-directory: electron
-        run: npx electron-builder --mac dmg --x64 --arm64 --publish never
+        run: npx electron-builder --mac dmg --x64 --arm64
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
