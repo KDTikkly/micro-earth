@@ -100,7 +100,7 @@ function StatusBadge({ status }) {
 }
 
 export default function App() {
-  const { region, lat, lon, setRegion, setCoords, geojsonData, status } = useAgentStore();
+  const { region, lat, lon, setRegion, setCoords, geojsonData, riskData, status } = useAgentStore();
 
   const handleRegionChange = (e) => {
     const found = REGIONS.find((r) => r.label === e.target.value);
@@ -116,24 +116,26 @@ export default function App() {
       {/* ── 顶部导航 ── */}
       <header style={{
         position: "relative", zIndex: 10, background: "#fff",
-        borderBottom: "2px solid #1A1A1A", padding: "10px 20px",
+        borderBottom: "2px solid #1A1A1A", padding: "8px 16px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
+        minHeight: 50,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
-            background: "#FFE66D", border: "2px solid #1A1A1A", boxShadow: "3px 3px 0 0 #1A1A1A",
-            padding: "4px 14px", fontFamily: "'Courier New', monospace",
-            fontWeight: 900, fontSize: 15, letterSpacing: "0.1em", color: "#1A1A1A",
+            background: "#FFE66D", border: "2px solid #1A1A1A", boxShadow: "2px 2px 0 0 #1A1A1A",
+            padding: "4px 12px", fontFamily: "'Courier New', monospace",
+            fontWeight: 900, fontSize: 16, letterSpacing: "0.1em", color: "#1A1A1A",
+            whiteSpace: "nowrap",
           }}>MICRO-EARTH</div>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: "#777", letterSpacing: "0.06em", fontWeight: 600 }}>
-            v0.2.0 · BLUEPRINT EDITION
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: "#999", letterSpacing: "0.04em", fontWeight: 600 }}>
+            v0.4.0 · PHASE 4
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <StatusBadge status={status} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Courier New', monospace", fontSize: 14 }}>
-            <span style={{ color: "#999", fontWeight: 700 }}>REGION</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "'Courier New', monospace", fontSize: 14 }}>
+            <span style={{ color: "#999", fontWeight: 700 }}>RGN</span>
             <select value={region} onChange={handleRegionChange} style={{
               background: "#fff", border: "2px solid #1A1A1A", boxShadow: "2px 2px 0 0 #1A1A1A",
               fontFamily: "'Courier New', monospace", fontWeight: 700, fontSize: 14,
@@ -142,7 +144,7 @@ export default function App() {
               {REGIONS.map((r) => <option key={r.label} value={r.label}>{r.label}</option>)}
             </select>
           </div>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "#888" }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: "#aaa", whiteSpace: "nowrap" }}>
             {lat.toFixed(2)}, {lon.toFixed(2)}
           </span>
         </div>
@@ -152,87 +154,70 @@ export default function App() {
       <main style={{
         position: "relative", zIndex: 5,
         display: "grid",
-        gridTemplateColumns: "260px 1fr 300px",
-        gridTemplateRows: "auto 1fr",
-        gap: 14,
-        padding: "16px 20px",
-        minHeight: "calc(100vh - 57px - 36px)",
+        gridTemplateColumns: "240px 1fr 260px 280px",
+        gap: 10,
+        padding: "12px 16px",
+        height: "calc(100vh - 50px - 36px)",
+        overflow: "hidden",
       }}>
 
-        {/* 左列：标题 + 状态 + 气象数据 */}
-        <div style={{ gridColumn: "1/2", gridRow: "1/3", display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* 巨型标题 */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-            <div style={{ paddingTop: 8 }}>
-              {/* ── 头像卡片 ── */}
+        {/* 左列：头像 + 标题 + 状态 + 气象 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, overflow: "hidden", minWidth: 0 }}>
+          {/* 头像 + 标题区 */}
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              {/* 头像 */}
               <div style={{
-                position: "relative",
-                width: 220,
-                height: 220,
-                border: "3px solid #1A1A1A",
-                boxShadow: "5px 5px 0 0 #1A1A1A",
-                marginBottom: 14,
-                overflow: "hidden",
-                background: "#e8f4fc",
+                position: "relative", flexShrink: 0,
+                width: 80, height: 80,
+                border: "2px solid #1A1A1A", boxShadow: "3px 3px 0 0 #1A1A1A",
+                overflow: "hidden", background: "#e8f4fc",
               }}>
-                <img
-                  src={lyriaImg}
-                  alt="LYRIA · REVERIE"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center 15%",
-                    display: "block",
-                  }}
-                />
-                {/* 左下角身份标签 */}
+                <img src={lyriaImg} alt="LYRIA" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 10%" }} />
                 <div style={{
                   position: "absolute", bottom: 0, left: 0, right: 0,
-                  background: "rgba(255,230,109,0.92)",
-                  borderTop: "2px solid #1A1A1A",
-                  padding: "4px 8px",
-                  fontFamily: "'Courier New', monospace",
-                  fontSize: 11, fontWeight: 900,
-                  letterSpacing: "0.08em", color: "#1A1A1A",
-                  textTransform: "uppercase",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                }}>
-                  <span>LYRIA · REVERIE</span>
-                  <span style={{ color: "#B5EAD7", textShadow: "0 0 0 #000", WebkitTextStroke: "1px #1A1A1A", fontSize: 10 }}>A.I.</span>
+                  background: "rgba(255,230,109,0.92)", borderTop: "1px solid #1A1A1A",
+                  padding: "2px 4px", fontFamily: "'Courier New', monospace",
+                  fontSize: 8, fontWeight: 900, letterSpacing: "0.06em", color: "#1A1A1A",
+                  textAlign: "center",
+                }}>LYRIA · A.I.</div>
+              </div>
+              {/* 标题文字 */}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: "0.1em", marginBottom: 4 }}>
+                  // DIGITAL TWIN
                 </div>
+                <div style={{ fontSize: 38, fontWeight: 900, color: "#1A1A1A", lineHeight: 1, letterSpacing: "-0.03em" }}>
+                  Micro<br />Earth.
+                </div>
+                <div style={{ marginTop: 6, height: 4, width: 56, background: "#FFB5A7", border: "1.5px solid #1A1A1A" }} />
+                <p style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 12, color: "#666", lineHeight: 1.6, fontWeight: 500 }}>
+                  LangGraph · Open-Meteo<br />实时气象数字孪生
+                </p>
               </div>
-
-              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 700, color: "#bbb", letterSpacing: "0.12em", marginBottom: 8 }}>
-                // DIGITAL TWIN EARTH
-              </div>
-              <div style={{ fontSize: 72, fontWeight: 900, color: "#1A1A1A", lineHeight: 0.95, letterSpacing: "-0.04em" }}>
-                Micro<br />Earth.
-              </div>
-              <div style={{ marginTop: 10, height: 6, width: 88, background: "#FFB5A7", border: "2px solid #1A1A1A" }} />
-              <p style={{ marginTop: 14, fontFamily: "'Courier New', monospace", fontSize: 14, color: "#555", lineHeight: 1.9, fontWeight: 500 }}>
-                空间感知引擎 · Phase 2<br />
-                LangGraph × Open-Meteo<br />
-                实时气象数字孪生
-              </p>
             </div>
           </motion.div>
 
           {/* 系统状态标签 */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
             <BrutalistCard title="SYSTEM" accent="yellow">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 6px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 5px" }}>
                 {[
                   { label: "BACKEND",  val: ":8000",      bg: "#B5EAD7" },
-                  { label: "FRONTEND", val: ":5180",      bg: "#9BF6FF" },
+                  { label: "FRONTEND", val: ":3000",      bg: "#9BF6FF" },
                   { label: "MAP",      val: "LEAFLET",    bg: "#FFE66D" },
                   { label: "API",      val: "OPEN-METEO", bg: "#FFB5A7" },
                   { label: "GRAPH",    val: "LANGGRAPH",  bg: "#C7B8EA" },
                   { label: "NODES",    val: nodeCount ? `${nodeCount}pts` : "—", bg: "#FFE66D" },
                 ].map(({ label, val, bg }) => (
-                  <div key={label} className="data-tag" style={{ background: bg }}>
-                    <span style={{ fontSize: 11, color: "#666", fontWeight: 600 }}>{label}</span>
-                    <span style={{ fontWeight: 900, fontSize: 15 }}>{val}</span>
+                  <div key={label} style={{
+                    display: "flex", flexDirection: "column",
+                    border: "1.5px solid #1A1A1A", boxShadow: "1.5px 1.5px 0 0 #1A1A1A",
+                    padding: "4px 7px", background: bg, minWidth: 0,
+                    fontFamily: "'Courier New', monospace",
+                  }}>
+                    <span style={{ fontSize: 11, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{label}</span>
+                    <span style={{ fontWeight: 900, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{val}</span>
                   </div>
                 ))}
               </div>
@@ -240,11 +225,11 @@ export default function App() {
           </motion.div>
 
           {/* 气象快照 */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }}>
-            <BrutalistCard title="WEATHER SNAPSHOT" accent="pink" headerExtra={region}>
-              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 12 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} style={{ flex: 1, minHeight: 0 }}>
+            <BrutalistCard title="WEATHER" accent="pink" headerExtra={region}>
+              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 13 }}>
                 {geojsonData?.features?.length ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {geojsonData.features.slice(0, 4).map((f, i) => {
                       const p = f.properties;
                       const isRainy = (p.precipitation_probability ?? 0) > 50;
@@ -252,18 +237,18 @@ export default function App() {
                         <div key={i} style={{
                           display: "flex", alignItems: "center", justifyContent: "space-between",
                           background: isRainy ? "#FFB5A7" : "#FFE66D",
-                          border: "2px solid #1A1A1A", boxShadow: "2px 2px 0 0 #1A1A1A",
-                          padding: "6px 10px",
+                          border: "1.5px solid #1A1A1A", boxShadow: "1.5px 1.5px 0 0 #1A1A1A",
+                          padding: "5px 8px", gap: 4,
                         }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#555" }}>NODE {i + 1}</span>
-                          <span style={{ fontWeight: 900, fontSize: 16 }}>{p.temperature_2m}°C</span>
-                          <span style={{ fontSize: 11, color: "#444", fontWeight: 600 }}>{p.precipitation_probability}% rain</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#666", whiteSpace: "nowrap" }}>N{i + 1}</span>
+                          <span style={{ fontWeight: 900, fontSize: 15 }}>{p.temperature_2m}°C</span>
+                          <span style={{ fontSize: 11, color: "#444", fontWeight: 600, whiteSpace: "nowrap" }}>{p.precipitation_probability}%☂</span>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <p style={{ color: "#bbb", fontFamily: "'Courier New', monospace", fontSize: 13 }}>// 等待 Agent 数据...</p>
+                  <p style={{ color: "#bbb", fontSize: 13 }}>// 等待 Agent 数据...</p>
                 )}
               </div>
             </BrutalistCard>
@@ -273,31 +258,32 @@ export default function App() {
         {/* 中央地图 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.12 }}
-          style={{ gridColumn: "2/3", gridRow: "1/3", minHeight: 480 }}
+          style={{ minWidth: 0, display: "flex", flexDirection: "column" }}
         >
           <div style={{
-            border: "2px solid #1A1A1A", boxShadow: "6px 6px 0 0 #1A1A1A",
+            border: "2px solid #1A1A1A", boxShadow: "4px 4px 0 0 #1A1A1A",
             background: "#fff", height: "100%", display: "flex", flexDirection: "column",
           }}>
             {/* 地图标题栏 */}
             <div style={{
               borderBottom: "2px solid #1A1A1A", padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff",
+              flexShrink: 0,
             }}>
               <span style={{
-                fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 13,
-                letterSpacing: "0.08em", textTransform: "uppercase", color: "#1A1A1A",
+                fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 14,
+                letterSpacing: "0.06em", textTransform: "uppercase", color: "#1A1A1A",
+                whiteSpace: "nowrap",
               }}>
                 GEO VIZ — {region.toUpperCase()} WEATHER GRID
               </span>
-              {/* 图纸标签框 */}
-              <div className="blueprint-label">SIMULATION MAP: ENABLED</div>
+              <div className="blueprint-label" style={{ flexShrink: 0, marginLeft: 12, fontSize: 13 }}>MAP: ON</div>
             </div>
             {/* 地图本体 */}
-            <div style={{ flex: 1, position: "relative", minHeight: 400 }}>
+            <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
               <Suspense fallback={
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontFamily: "'Courier New', monospace", fontSize: 12, color: "#bbb" }}>
-                  LOADING MAP ENGINE...
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontFamily: "'Courier New', monospace", fontSize: 11, color: "#bbb" }}>
+                  LOADING MAP...
                 </div>
               }>
                 <EarthMap region={region} lat={lat} lon={lon} />
@@ -306,17 +292,17 @@ export default function App() {
           </div>
         </motion.div>
 
-        {/* 右侧终端 */}
+        {/* 右侧：Agent 终端 */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
-          style={{ gridColumn: "3/4", gridRow: "1/3", display: "flex", flexDirection: "column" }}
+          initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+          style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
         >
           {/* Tab */}
-          <div style={{ display: "flex", borderBottom: "2px solid #1A1A1A" }}>
-            {["AGENT STREAM", "CONFIG"].map((tab, i) => (
+          <div style={{ display: "flex", borderBottom: "2px solid #1A1A1A", flexShrink: 0 }}>
+            {["STREAM", "CONFIG"].map((tab, i) => (
               <div key={tab} style={{
                 flex: 1, padding: "6px 0", fontFamily: "'Courier New', monospace", fontWeight: 700,
-                fontSize: 11, letterSpacing: "0.08em", textAlign: "center",
+                fontSize: 13, letterSpacing: "0.08em", textAlign: "center",
                 borderRight: i === 0 ? "2px solid #1A1A1A" : "none",
                 background: i === 0 ? "#FFE66D" : "#f8f8f8",
                 color: i === 0 ? "#1A1A1A" : "#bbb",
@@ -327,23 +313,33 @@ export default function App() {
             border: "2px solid #1A1A1A", borderTop: "none",
             boxShadow: "4px 4px 0 0 #1A1A1A",
             flex: 1, display: "flex", flexDirection: "column", background: "#fafafa",
+            minHeight: 0, overflow: "hidden",
           }}>
             <AgentTerminal region={region} lat={lat} lon={lon} />
           </div>
+        </motion.div>
+
+        {/* 最右侧：Analytics 仪表盘 */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
+          style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}
+        >
+          <AnalyticsDashboard riskData={riskData} region={region} />
         </motion.div>
       </main>
 
       {/* ── 底部状态栏 ── */}
       <footer style={{
         position: "relative", zIndex: 10,
-        borderTop: "2px solid #1A1A1A", padding: "6px 20px",
+        borderTop: "2px solid #1A1A1A", padding: "6px 16px",
         background: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between",
-        fontFamily: "'Courier New', monospace", fontSize: 10, color: "#bbb",
+        fontFamily: "'Courier New', monospace", fontSize: 12, color: "#bbb",
+        height: 36, flexShrink: 0,
       }}>
         <span>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#1A1A1A", fontWeight: 700 }}>BLUEPRINT NEO-BRUTALISM EDITION</span>
+        <span style={{ color: "#1A1A1A", fontWeight: 700 }}>BLUEPRINT NEO-BRUTALISM · PHASE 4</span>
         <span style={{ color: geojsonData ? "#2D6A4F" : "#ccc" }}>
-          {geojsonData ? `✓ ${geojsonData.metadata?.source ?? "open-meteo.com"}` : "// NO DATA"}
+          {geojsonData ? `✓ open-meteo.com` : "// NO DATA"}
         </span>
       </footer>
     </div>

@@ -1,9 +1,10 @@
 /**
- * EarthMap — Blueprint Neo-Brutalism 版
- * - CartoDB Positron 浅色底图
- * - 白底 + 粗黑边框 + 轻盈硬投影
- * - 粉彩数据方块（降水概率驱动）
- * - 图纸风标签 + 几何角标装饰
+ * EarthMap — Phase 4 Blueprint Neo-Brutalism
+ * 新增：Kinetic Entities 多智能体实体渲染
+ * - NORMAL: 蓝色空心细线三角形
+ * - STRESSED: 黄色实心菱形（微幅脉冲）
+ * - PANIC: 红色/粉色实心圆（闪烁动画）
+ * 布朗运动由后端驱动，前端通过 Zustand 实时更新 Marker 位置
  */
 import { useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
@@ -18,7 +19,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// ── 数据点样式：粉彩方块 ────────────────────────────────────
+// ── 气象数据点样式 ───────────────────────────────────────────
 function pointToLayer(feature, latlng) {
   const precip  = feature?.properties?.precipitation_probability ?? 0;
   const isRainy = precip > 50;
@@ -73,7 +74,7 @@ function onEachFeature(feature, layer) {
   `);
 }
 
-// 自动飞行到数据中心
+// ── 自动飞行 ────────────────────────────────────────────────
 function FlyToData({ geojson }) {
   const map = useMap();
   useEffect(() => {
@@ -84,11 +85,134 @@ function FlyToData({ geojson }) {
   return null;
 }
 
+// ── 实体 SVG Icon 工厂 ──────────────────────────────────────
+function makeEntityIcon(status, id) {
+  const idStr = String(id).padStart(3, "0");
+
+  if (status === "PANIC") {
+    // 红色实心圆 + 闪烁 CSS
+    return L.divIcon({
+      className: "",
+      html: `
+        <div style="
+          width:14px; height:14px; border-radius:50%;
+          background:#FF0044; border:2px solid #1A1A1A;
+          animation:entity-panic 0.6s infinite alternate;
+          box-shadow:0 0 6px 2px rgba(255,0,68,0.6);
+        " title="Entity #${idStr} — PANIC"></div>
+        <style>
+          @keyframes entity-panic {
+            from { transform:scale(1); opacity:1; }
+            to   { transform:scale(1.5); opacity:0.5; }
+          }
+        </style>
+      `,
+      iconSize:   [14, 14],
+      iconAnchor: [7, 7],
+    });
+  }
+
+  if (status === "STRESSED") {
+    // 黄色实心菱形 + 脉冲
+    return L.divIcon({
+      className: "",
+      html: `
+        <div style="
+          width:12px; height:12px;
+          background:#FFE66D; border:1.5px solid #1A1A1A;
+          transform:rotate(45deg);
+          animation:entity-stress 1.2s ease-in-out infinite alternate;
+        " title="Entity #${idStr} — STRESSED"></div>
+        <style>
+          @keyframes entity-stress {
+            from { transform:rotate(45deg) scale(1); }
+            to   { transform:rotate(45deg) scale(1.3); }
+          }
+        </style>
+      `,
+      iconSize:   [12, 12],
+      iconAnchor: [6, 6],
+    });
+  }
+
+  // NORMAL: 蓝色空心细线三角形
+  return L.divIcon({
+    className: "",
+    html: `
+      <svg width="12" height="11" viewBox="0 0 12 11" fill="none"
+           title="Entity #${idStr}" style="display:block;overflow:visible">
+        <polygon points="6,1 11,10 1,10"
+          stroke="#1A6AFF" stroke-width="1.5" fill="none"
+          stroke-linejoin="round"/>
+      </svg>
+    `,
+    iconSize:   [12, 11],
+    iconAnchor: [6, 5],
+  });
+}
+
+// ── 实体 Marker 层（独立组件，响应 Zustand 更新）───────────
+function EntityLayer() {
+  const entityData = useAgentStore((s) => s.entityData);
+  const map = useMap();
+  const markersRef = useRef({});   // id -> L.Marker
+  const layerRef   = useRef(null);
+
+  useEffect(() => {
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup().addTo(map);
+    }
+  }, [map]);
+
+  useEffect(() => {
+    if (!entityData?.entities || !layerRef.current) return;
+    const entities = entityData.entities;
+    const seen = new Set();
+
+    entities.forEach((ent) => {
+      const { id, lat, lon, st } = ent;
+      seen.add(id);
+
+      if (markersRef.current[id]) {
+        // 更新位置 & 图标
+        markersRef.current[id].setLatLng([lat, lon]);
+        markersRef.current[id].setIcon(makeEntityIcon(st, id));
+      } else {
+        // 新建 Marker
+        const marker = L.marker([lat, lon], {
+          icon: makeEntityIcon(st, id),
+          zIndexOffset: st === "PANIC" ? 500 : st === "STRESSED" ? 200 : 0,
+        });
+        marker.addTo(layerRef.current);
+        markersRef.current[id] = marker;
+      }
+    });
+
+    // 清理已消失的实体
+    Object.keys(markersRef.current).forEach((k) => {
+      if (!seen.has(Number(k))) {
+        layerRef.current.removeLayer(markersRef.current[k]);
+        delete markersRef.current[k];
+      }
+    });
+  }, [entityData]);
+
+  // 组件卸载清理
+  useEffect(() => {
+    return () => {
+      if (layerRef.current) {
+        layerRef.current.clearLayers();
+      }
+    };
+  }, []);
+
+  return null;
+}
+
 // ── 图纸风角标装饰 ──────────────────────────────────────────
 function BlueprintCornerDecor() {
   return (
     <>
-      {/* 右上角：蓝色小三角 */}
       <div style={{
         position: "absolute", top: 0, right: 0,
         zIndex: 1000, pointerEvents: "none",
@@ -97,7 +221,6 @@ function BlueprintCornerDecor() {
         borderTop: "28px solid #9BF6FF",
         filter: "drop-shadow(-2px 2px 0 #1A1A1A)",
       }} />
-      {/* 左下角：黄色小方块 */}
       <div style={{
         position: "absolute", bottom: 0, left: 0,
         zIndex: 1000, pointerEvents: "none",
@@ -105,7 +228,6 @@ function BlueprintCornerDecor() {
         background: "#FFE66D",
         border: "2px solid #1A1A1A",
       }} />
-      {/* 右下角：粉色菱形 */}
       <div style={{
         position: "absolute", bottom: 6, right: 6,
         zIndex: 1000, pointerEvents: "none",
@@ -119,7 +241,7 @@ function BlueprintCornerDecor() {
 }
 
 export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 }) {
-  const { geojsonData, setGeoJson, appendLog, setStatus } = useAgentStore();
+  const { geojsonData, entityData, setGeoJson, appendLog, setStatus } = useAgentStore();
   const wsRef = useRef(null);
 
   const connect = useCallback(() => {
@@ -144,6 +266,12 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         } else {
           appendLog({ ...data, ts });
         }
+        if (data.event === "entities" && data.data) {
+          useAgentStore.getState().setEntityData(data.data);
+        }
+        if (data.event === "trade" && data.data) {
+          useAgentStore.getState().appendTrade(data.data);
+        }
         if (data.event === "done")  setStatus("IDLE");
         if (data.event === "error") setStatus("ERROR");
       } catch { /* ignore */ }
@@ -162,6 +290,12 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     return () => wsRef.current?.close();
   }, [connect]);
 
+  // 实体统计
+  const stats = entityData?.stats;
+  const panicCount    = stats?.panic_count ?? 0;
+  const stressedCount = stats?.stressed_count ?? 0;
+  const totalEntities = stats?.total_entities ?? 0;
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <MapContainer
@@ -171,7 +305,6 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         zoomControl={true}
         attributionControl={true}
       >
-        {/* CartoDB Positron 浅色极简底图 */}
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -188,6 +321,9 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
           />
         )}
         {geojsonData && <FlyToData geojson={geojsonData} />}
+
+        {/* Phase 4: 实体渲染层 */}
+        <EntityLayer />
       </MapContainer>
 
       {/* 角标装饰 */}
@@ -200,17 +336,42 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         background: "#FFE66D",
         border: "2px solid #1A1A1A",
         boxShadow: "2px 2px 0 0 #1A1A1A",
-        padding: "2px 8px",
+        padding: "3px 10px",
         fontFamily: "'Courier New', monospace",
-        fontSize: 10, fontWeight: 900, color: "#1A1A1A",
+        fontSize: 13, fontWeight: 900, color: "#1A1A1A",
       }}>
         {geojsonData
           ? `◉ ${geojsonData.features?.length ?? 0} NODES / ${geojsonData.metadata?.region ?? region}`
           : "◎ AWAITING DATA..."}
       </div>
 
-      {/* FETCH 重新触发按钮 */}
-      <div style={{ position: "absolute", top: 8, left: 8, zIndex: 600 }}>
+      {/* Phase 4: 实体统计徽章 */}
+      {totalEntities > 0 && (
+        <div style={{
+          position: "absolute", bottom: 8, left: 8,
+          zIndex: 600, pointerEvents: "none",
+          display: "flex", gap: 4,
+          fontFamily: "'Courier New', monospace",
+          fontSize: 11, fontWeight: 900,
+        }}>
+          <span style={{ background: "#9BF6FF", border: "2px solid #1A1A1A", padding: "2px 7px" }}>
+            ▷ {totalEntities - panicCount - stressedCount} NORMAL
+          </span>
+          {stressedCount > 0 && (
+            <span style={{ background: "#FFE66D", border: "2px solid #1A1A1A", padding: "2px 7px" }}>
+              ◆ {stressedCount} STRESSED
+            </span>
+          )}
+          {panicCount > 0 && (
+            <span style={{ background: "#FFB5A7", border: "2px solid #1A1A1A", padding: "2px 7px", color: "#C0392B" }}>
+              ● {panicCount} PANIC
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* FETCH 重新触发按钮 — 右上角 */}
+      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 600 }}>
         <div style={{
           position: "absolute", inset: 0,
           transform: "translate(3px,3px)",
@@ -222,9 +383,9 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
             position: "relative",
             background: "#fff",
             border: "2px solid #1A1A1A",
-            padding: "4px 10px",
+            padding: "5px 12px",
             fontFamily: "'Courier New', monospace",
-            fontSize: 10, fontWeight: 900, color: "#1A1A1A",
+            fontSize: 13, fontWeight: 900, color: "#1A1A1A",
             cursor: "pointer", letterSpacing: "1px",
           }}
           onMouseDown={(e) => { e.currentTarget.style.transform = "translate(3px,3px)"; }}

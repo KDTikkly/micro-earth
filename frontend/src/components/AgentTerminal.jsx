@@ -58,6 +58,12 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
         if (data.event === "risk" && data.data) {
           useAgentStore.getState().setRiskData(data.data);
         }
+        if (data.event === "entities" && data.data) {
+          useAgentStore.getState().setEntityData(data.data);
+        }
+        if (data.event === "trade" && data.data) {
+          useAgentStore.getState().appendTrade(data.data);
+        }
         if (data.event === "done")  setStatus("IDLE");
         if (data.event === "error") setStatus("ERROR");
         appendLog({ ...data, ts });
@@ -97,27 +103,28 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
         padding: "8px 12px", borderBottom: "2px solid #1A1A1A",
         background: "#f8f8f8",
         fontFamily: "'Courier New', monospace", fontSize: 13, color: "#999",
+        flexShrink: 0, gap: 8,
       }}>
-        <span style={{ fontWeight: 700, color: "#1A1A1A", fontSize: 14 }}>MICRO-EARTH · AGENT STREAM</span>
-        <span style={{ color: "#777", fontSize: 12 }}>REGION: {region}</span>
+        <span style={{ fontWeight: 700, color: "#1A1A1A", fontSize: 13, whiteSpace: "nowrap" }}>AGENT STREAM</span>
+        <span style={{ color: "#777", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{region}</span>
       </div>
 
       {/* 日志区 */}
       <div className="terminal-panel" style={{
-        flex: 1, padding: "12px 14px",
-        minHeight: 200, maxHeight: 380,
-        overflowY: "auto", lineHeight: 1.8,
-        fontFamily: "'Courier New', monospace", fontSize: 13,
+        flex: 1, padding: "10px 12px",
+        minHeight: 0,
+        overflowY: "auto", lineHeight: 1.7,
+        fontFamily: "'Courier New', monospace", fontSize: 14,
       }}>
         {logs.length === 0 && (
-          <p style={{ color: "#ccc", fontStyle: "italic", fontSize: 13 }}>// 等待工作流启动...</p>
+          <p style={{ color: "#ccc", fontStyle: "italic", fontSize: 14 }}>// 等待工作流启动...</p>
         )}
         {logs.map((log, i) => {
           const nodeColor = NODE_COLORS[log.node] ?? NODE_COLORS[log.event] ?? "#555";
           return (
             <div key={i} style={{ marginBottom: 3 }}>
-              <span style={{ color: "#aaa", fontSize: 12 }}>[{log.ts}] </span>
-              <span style={{ color: nodeColor, fontWeight: 700, fontSize: 13 }}>{log.message}</span>
+              <span style={{ color: "#aaa", fontSize: 13 }}>[{log.ts}] </span>
+              <span style={{ color: nodeColor, fontWeight: 700, fontSize: 14 }}>{log.message}</span>
             </div>
           );
         })}
@@ -134,7 +141,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
         background: "#0D0D0D",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#555", fontWeight: 700, letterSpacing: "0.1em" }}>CITY CMD</span>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "#555", fontWeight: 700, letterSpacing: "0.1em" }}>CITY CMD</span>
         </div>
         <div style={{
           display: "flex", alignItems: "center",
@@ -144,7 +151,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           background: "#0D0D0D",
           overflow: "hidden",
         }}>
-          <span style={{ padding: "0 8px", color: "#00FF88", fontFamily: "'Courier New', monospace", fontSize: 14, fontWeight: 700 }}>$</span>
+          <span style={{ padding: "0 8px", color: "#00FF88", fontFamily: "'Courier New', monospace", fontSize: 16, fontWeight: 700 }}>$</span>
           <input
             type="text"
             value={cmdInput}
@@ -160,9 +167,9 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
               outline: "none",
               color: "#00FF88",
               fontFamily: "'Courier New', monospace",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
-              padding: "7px 4px",
+              padding: "8px 4px",
               letterSpacing: "0.04em",
             }}
           />
@@ -170,7 +177,7 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
             padding: "0 8px",
             color: "#444",
             fontFamily: "'Courier New', monospace",
-            fontSize: 10,
+            fontSize: 13,
           }}>↵</span>
         </div>
       </div>
