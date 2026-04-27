@@ -1,8 +1,12 @@
-"""
-EntitySimulator Agent — Phase 4
-多智能体自主响应与动态资产推演 (Autonomous Entities & Dynamic Asset Valuation)
+﻿"""
+EntitySimulator Agent - v8.0
+多智能体自主疏散 + Cosmolyra AMM 经济层 (Cosmolyra Ecosystem & Layer 2 Settlement)
 
-在目标城市周围生成 100 个 Kinetic Entities，受环境风险驱动资产老化与恐慌性交易。
+v8.0 新增：
+  - AMM 恒定乘积公式 x*y=k
+  - 灾害触发实体自主抛售 -> AMM Swap -> 价格剧烈波动
+  - 每次 Swap 生成伪交易哈希（tx_hash）
+  - trade_events 携带 amm_price / amm_k / tx_hash 字段
 """
 # -*- coding: utf-8 -*-
 import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -10,23 +14,86 @@ import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 import random
 import math
 import time
+import hashlib
 from typing import List, Dict
 
+# -- 灾害感知阈值 --------------------------------------------------------------
+EVACUATION_RISK_THRESHOLD = 60   # 风险指数 >= 此值触发疏散
+DANGER_RADIUS_DEG         = 0.25 # 灾害中心半径（度），约 25km
+SAFE_RADIUS_DEG           = 0.55 # 抵达此距离视为安全
+EVAC_SPEED_DEG            = 0.003  # 每 tick 最大位移（约 300m）
 
-# ── 资产老化非线性模型 ───────────────────────────────────────────────────────
-def _depreciation_rate(risk_index: float, distance_factor: float) -> float:
+# -- v8.0 AMM 初始流动性 -------------------------------------------------------
+AMM_INITIAL_ASSET   = 10.0    # 初始 DynAsset 储量
+AMM_INITIAL_STABLE  = 500.0   # 初始 Stablecoin 储量
+_amm_asset  = AMM_INITIAL_ASSET
+_amm_stable = AMM_INITIAL_STABLE
+_amm_k      = AMM_INITIAL_ASSET * AMM_INITIAL_STABLE   # 恒定乘积 k = x * y
+
+
+def amm_reset():
+    """重置 AMM 池到初始状态"""
+    global _amm_asset, _amm_stable, _amm_k
+    _amm_asset  = AMM_INITIAL_ASSET
+    _amm_stable = AMM_INITIAL_STABLE
+    _amm_k      = _amm_asset * _amm_stable
+
+
+def amm_price() -> float:
+    """当前 AMM 价格 = stable / asset"""
+    return _amm_stable / _amm_asset if _amm_asset > 1e-9 else 0.0
+
+
+def amm_swap_asset_for_stable(asset_in: float) -> float:
     """
-    非线性资产老化率（每次更新的折旧率）
-    - risk_index: 0~100 环境风险指数
-    - distance_factor: 0~1 实体距风险中心的相对距离（越近=越高）
-    公式: rate = k * risk² * proximity_weight
+    实体抛售 asset_in 个 DynAsset 换 Stablecoin。
+    恒定乘积：(x + dx)(y - dy) = k  =>  dy = y - k/(x+dx)
+    返回实际获得的 stable 数量（有滑点）。
     """
-    if risk_index <= 50:
+    global _amm_asset, _amm_stable
+    if asset_in <= 0 or _amm_asset <= 1e-9:
         return 0.0
-    k = 0.0008
-    proximity = 1.0 - distance_factor * 0.6  # 距离越远衰减越少
-    rate = k * (risk_index ** 1.8) * proximity
-    return min(rate, 0.25)  # 单次最多折损 25%
+    stable_out = _amm_stable - _amm_k / (_amm_asset + asset_in)
+    stable_out = max(0.0, stable_out)
+    _amm_asset  += asset_in
+    _amm_stable -= stable_out
+    return stable_out
+
+
+def _make_tx_hash(entity_id: int, ts: str, price: float) -> str:
+    """生成伪确定性交易哈希（Keccak-style hex，不依赖 web3.py）"""
+    raw = f"{entity_id}:{ts}:{price:.6f}:{random.random()}"
+    return "0x" + hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _distance_deg(lat1, lon1, lat2, lon2) -> float:
+    """简单欧氏距离（度）"""
+    return math.sqrt((lat1 - lat2) ** 2 + (lon1 - lon2) ** 2)
+
+
+def _evacuation_vector(ent_lat, ent_lon, disaster_lat, disaster_lon):
+    """
+    计算远离灾害中心的单位向量，加入随机偏转模拟真实逃跑路径
+    """
+    dlat = ent_lat - disaster_lat
+    dlon = ent_lon - disaster_lon
+    dist = math.sqrt(dlat ** 2 + dlon ** 2) or 1e-9
+
+    # 单位向量（远离方向）
+    ux = dlat / dist
+    uy = dlon / dist
+
+    # 随机侧偏 ±30 deg 模拟绕路
+    angle = random.uniform(-math.pi / 6, math.pi / 6)
+    cos_a, sin_a = math.cos(angle), math.sin(angle)
+    rx = ux * cos_a - uy * sin_a
+    ry = ux * sin_a + uy * cos_a
+
+    # 速度随接近程度线性加快（越近越快跑）
+    proximity = max(0.0, 1.0 - dist / DANGER_RADIUS_DEG)
+    speed = EVAC_SPEED_DEG * (0.5 + 1.0 * proximity)
+
+    return rx * speed, ry * speed
 
 
 def generate_entities(
@@ -36,24 +103,24 @@ def generate_entities(
     spread_deg: float = 0.35,
 ) -> List[Dict]:
     """
-    在城市中心周围随机生成实体群
-    spread_deg: 坐标散布半径（度）
+    在城市中心周围随机生成实体群（救援编队 / 高价值移动资产）
     """
     random.seed(int(center_lat * 1000 + center_lon * 1000) % 9999)
     entities = []
     for i in range(count):
-        # 正态分布聚集在城市中心
         r = abs(random.gauss(0, spread_deg * 0.45))
         theta = random.uniform(0, 2 * math.pi)
         lat = center_lat + r * math.cos(theta)
         lon = center_lon + r * math.sin(theta)
         entities.append({
-            "entity_id":   i + 1,
-            "location":    {"lat": round(lat, 5), "lon": round(lon, 5)},
-            "asset_value": 1000.0,
-            "status":      "NORMAL",     # NORMAL | STRESSED | PANIC
-            "trade_log":   [],
-            "_dist_factor": min(r / spread_deg, 1.0),  # 归一化距离
+            "entity_id":     i + 1,
+            "location":      {"lat": round(lat, 5), "lon": round(lon, 5)},
+            "status":        "SAFE",    # SAFE | EVACUATING | RESCUED
+            "trail":         [],        # 最近 8 个历史坐标（逃生尾迹）
+            "_dist_factor":  min(r / spread_deg, 1.0),
+            # 兼容旧字段
+            "asset_value":   1000.0,
+            "trade_log":     [],
         })
     return entities
 
@@ -62,95 +129,161 @@ def simulate_entities(
     entities: List[Dict],
     risk_index: float,
     risk_level: str,
+    disaster_lat: float = None,
+    disaster_lon: float = None,
     tick: int = 0,
 ) -> Dict:
     """
-    根据风险指数推演实体状态变化。
-    返回:
-    - entities: 更新后的实体列表（含布朗运动偏移）
-    - trade_events: 本轮触发的交易事件列表
-    - stats: 全局统计
+    v8.0: 灾害感知 + 逃生向量推演 + Cosmolyra AMM 自动结算。
+
+    当 risk_index >= EVACUATION_RISK_THRESHOLD 时：
+      - 处于灾害半径内的实体进入 EVACUATING 状态
+      - 每个新疏散实体向 AMM 发起 Swap（抛售 DynAsset 换 Stablecoin）
+      - AMM 价格因抛压下跌（恒定乘积滑点）
+      - trade_events 携带 amm_price / amm_k / tx_hash 字段
+
+    Returns:
+    - entities:      更新后的实体列表（含尾迹）
+    - trade_events:  兼容旧终端日志的事件列表（含 AMM 字段）
+    - stats:         全局统计
+    - evac_logs:     物理灾害警告日志
     """
-    trade_events = []
-    total_value = 0.0
-    panic_count = 0
-    stressed_count = 0
+    global _amm_asset, _amm_stable, _amm_k
+
+    # 每轮重置 AMM（保证每次运行从初始流动性开始）
+    if tick == 0:
+        amm_reset()
+
+    if disaster_lat is None:
+        lats = [e["location"]["lat"] for e in entities]
+        lons = [e["location"]["lon"] for e in entities]
+        disaster_lat = sum(lats) / len(lats)
+        disaster_lon = sum(lons) / len(lons)
+
+    disaster_active  = risk_index >= EVACUATION_RISK_THRESHOLD
+    trade_events     = []
+    evac_logs        = []
+    safe_count       = 0
+    evacuating_count = 0
+    rescued_count    = 0
+    newly_evacuating = []
 
     for ent in entities:
-        # ── 布朗运动偏移（持续微幅随机游走）──
-        brownian_lat = random.gauss(0, 0.0008)
-        brownian_lon = random.gauss(0, 0.0008)
-        ent["location"]["lat"] = round(ent["location"]["lat"] + brownian_lat, 5)
-        ent["location"]["lon"] = round(ent["location"]["lon"] + brownian_lon, 5)
+        lat = ent["location"]["lat"]
+        lon = ent["location"]["lon"]
+        dist = _distance_deg(lat, lon, disaster_lat, disaster_lon)
 
-        # ── 资产老化计算 ──
-        dist_f = ent.get("_dist_factor", 0.5)
-        rate = _depreciation_rate(risk_index, dist_f)
+        if disaster_active:
+            if dist < DANGER_RADIUS_DEG and ent["status"] != "RESCUED":
+                if ent["status"] == "SAFE":
+                    ent["status"] = "EVACUATING"
+                    newly_evacuating.append(ent["entity_id"])
 
-        if rate > 0:
-            old_val = ent["asset_value"]
-            # 加入个体随机波动 ±15%
-            actual_rate = rate * random.uniform(0.85, 1.15)
-            ent["asset_value"] = round(max(old_val * (1 - actual_rate), 1.0), 2)
-            depreciation_pct = round((old_val - ent["asset_value"]) / old_val * 100, 1)
+                if ent["status"] == "EVACUATING":
+                    ent["trail"].append({"lat": round(lat, 5), "lon": round(lon, 5)})
+                    if len(ent["trail"]) > 8:
+                        ent["trail"].pop(0)
 
-            # ── 状态转变逻辑 ──
-            prev_status = ent["status"]
-            if ent["asset_value"] < 300:
-                ent["status"] = "PANIC"
-            elif ent["asset_value"] < 600:
-                ent["status"] = "STRESSED"
+                    dlat, dlon = _evacuation_vector(lat, lon, disaster_lat, disaster_lon)
+                    new_lat = round(lat + dlat, 5)
+                    new_lon = round(lon + dlon, 5)
+                    ent["location"]["lat"] = new_lat
+                    ent["location"]["lon"] = new_lon
 
-            # ── 触发交易事件 ──
-            if depreciation_pct > 5 and random.random() < 0.4:
-                action = _decide_trade_action(ent, risk_level, depreciation_pct)
-                event = {
-                    "ts":         time.strftime("%H:%M:%S"),
-                    "entity_id":  ent["entity_id"],
-                    "asset_value": ent["asset_value"],
-                    "depreciation_pct": depreciation_pct,
-                    "action":     action,
-                    "status":     ent["status"],
-                }
-                trade_events.append(event)
-                ent["trade_log"].append(event)
+                    new_dist = _distance_deg(new_lat, new_lon, disaster_lat, disaster_lon)
+                    if new_dist >= SAFE_RADIUS_DEG:
+                        ent["status"] = "RESCUED"
+
+            elif dist >= SAFE_RADIUS_DEG and ent["status"] == "SAFE":
+                ent["location"]["lat"] = round(lat + random.gauss(0, 0.0003), 5)
+                ent["location"]["lon"] = round(lon + random.gauss(0, 0.0003), 5)
+
+        else:
+            ent["status"] = "SAFE"
+            ent["location"]["lat"] = round(lat + random.gauss(0, 0.0005), 5)
+            ent["location"]["lon"] = round(lon + random.gauss(0, 0.0005), 5)
+            ent["trail"] = []
 
         # 统计
-        total_value += ent["asset_value"]
-        if ent["status"] == "PANIC":
-            panic_count += 1
-        elif ent["status"] == "STRESSED":
-            stressed_count += 1
+        if   ent["status"] == "RESCUED":    rescued_count    += 1
+        elif ent["status"] == "EVACUATING": evacuating_count += 1
+        else:                               safe_count       += 1
 
-    avg_value = round(total_value / len(entities), 2)
+        ent["asset_value"] = round(ent["asset_value"] * random.uniform(0.999, 1.001), 2)
+
+    # -- v8.0: AMM 抛售 + 交易事件生成 -----------------------------------------
+    ts = time.strftime("%H:%M:%S")
+    if newly_evacuating:
+        evac_log = (
+            f"[{ts}] [WARNING] Disaster approaching ({disaster_lat:.3f}, {disaster_lon:.3f}). "
+            f"{len(newly_evacuating)} entities initiating emergency evacuation protocols."
+        )
+        evac_logs.append(evac_log)
+
+        for eid in newly_evacuating[:10]:
+            # AMM swap：每实体抛售约 0.3~0.8 个 DynAsset
+            sell_amount = round(random.uniform(0.3, 0.8), 4)
+            stable_recv = amm_swap_asset_for_stable(sell_amount)
+            cur_price   = amm_price()
+            tx_hash     = _make_tx_hash(eid, ts, cur_price)
+
+            trade_events.append({
+                "ts":           ts,
+                "entity_id":    eid,
+                "action":       "EMERGENCY_EVACUATE",
+                "status":       "EVACUATING",
+                "asset_value":  round(cur_price * 10, 2),   # 估值 = price * 10 个单位
+                "depreciation_pct": round((1 - cur_price / (AMM_INITIAL_STABLE / AMM_INITIAL_ASSET)) * 100, 2),
+                # v8.0 AMM 字段
+                "amm_price":    round(cur_price, 4),
+                "amm_k":        round(_amm_k, 4),
+                "amm_sell":     sell_amount,
+                "amm_recv":     round(stable_recv, 4),
+                "tx_hash":      tx_hash,
+            })
+            amm_log = (
+                f"[{ts}] [AMM] Entity #{eid:03d} SWAP {sell_amount} DynAsset -> {stable_recv:.2f} Stable | "
+                f"Price: {cur_price:.2f} | TxHash: {tx_hash[:18]}..."
+            )
+            evac_logs.append(amm_log)
+
+    if rescued_count > 0 and tick % 3 == 0:
+        evac_logs.append(
+            f"[{ts}] [INFO] {rescued_count} entities reached safe zones. "
+            f"{evacuating_count} still evacuating. AMM Price: {amm_price():.2f}"
+        )
 
     stats = {
-        "tick":           tick,
-        "avg_asset_value": avg_value,
-        "panic_count":    panic_count,
-        "stressed_count": stressed_count,
-        "normal_count":   len(entities) - panic_count - stressed_count,
-        "total_entities": len(entities),
-        "risk_index":     risk_index,
-        "risk_level":     risk_level,
+        "tick":             tick,
+        "total_entities":   len(entities),
+        "safe_count":       safe_count,
+        "evacuating_count": evacuating_count,
+        "rescued_count":    rescued_count,
+        "risk_index":       risk_index,
+        "risk_level":       risk_level,
+        "disaster_active":  disaster_active,
+        "disaster_lat":     round(disaster_lat, 5),
+        "disaster_lon":     round(disaster_lon, 5),
+        # 兼容旧字段
+        "panic_count":      evacuating_count,
+        "stressed_count":   0,
+        "normal_count":     safe_count,
+        "avg_asset_value":  round(amm_price() * 10, 2),
+        # v8.0 AMM
+        "amm_price":        round(amm_price(), 4),
+        "amm_k":            round(_amm_k, 4),
     }
 
     return {
         "entities":     entities,
-        "trade_events": trade_events[:20],  # 每轮最多推送 20 条事件
+        "trade_events": trade_events[:20],
+        "evac_logs":    evac_logs,
         "stats":        stats,
     }
 
 
 def _decide_trade_action(ent: Dict, risk_level: str, depreciation_pct: float) -> str:
-    """根据状态和风险等级决定交易行为"""
-    if ent["status"] == "PANIC":
-        actions = ["EMERGENCY_SELL", "FORCED_LIQUIDATION", "DISTRESS_SWAP"]
-    elif ent["status"] == "STRESSED":
-        actions = ["HEDGE_SWAP", "PARTIAL_SELL", "RISK_TRANSFER"]
-    else:
-        if risk_level in ("CRITICAL", "HIGH"):
-            actions = ["DEFENSIVE_REBALANCE", "SHORT_HEDGE", "PARTIAL_SELL"]
-        else:
-            actions = ["REBALANCE", "HOLD", "MICRO_ADJUST"]
-    return random.choice(actions)
+    """兼容旧接口（不再使用，保留供旧代码引用）"""
+    return "EMERGENCY_EVACUATE"
+
+

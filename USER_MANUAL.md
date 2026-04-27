@@ -1,5 +1,5 @@
-# MICRO-EARTH · 操作手册
-### 由 Lyria Reverie 亲自导览 · Version 0.8.0 · PHASE 8
+﻿# MICRO-EARTH · 操作手册
+### 由 Lyria Reverie 亲自导览 · Version 0.8.0 · v8.0
 
 ```
   ███╗   ███╗██╗ ██████╗██████╗  ██████╗       ███████╗ █████╗ ██████╗ ████████╗██╗  ██╗
@@ -88,7 +88,7 @@ Micro-Earth 是一套**受真实物理环境驱动的多智能体气象推演数
 
 #### ◉ 3D 地球本体
 
-- **蓝色大理石贴图**：静态全球贴图（Phase 9 规划升级为动态瓦片！）
+- **蓝色大理石贴图**：静态全球贴图（v9.0 规划升级为动态瓦片！）
 - **彩色高度柱**：气象节点温度热点，颜色越红代表越热：
   - `#00CFFF` 冰蓝 → ≤5°C
   - `#AAFF00` 荧光绿 → 15~22°C
@@ -301,17 +301,17 @@ uvicorn main:app --reload --port 8000
 
 | Phase | 状态 | 内容 |
 |-------|------|------|
-| Phase 1-2 | ✅ 已完成 | 基础框架 + GeoJSON 气象节点 |
-| Phase 3 | ✅ 已完成 | 极端气象风险指数 |
-| Phase 4 | ✅ 已完成 | 多智能体实体模拟 + 交易系统 |
-| Phase 5 | ✅ 已完成 | What-If 沙盘 + 热力图 + 洪涝覆盖层 |
-| Phase 6 | ✅ 已完成 | 3D 地球引擎迁移 + 风场粒子 + 时空播放器 |
-| Phase 7 | ✅ 已完成 | Lyria 色彩系统 + UTF-8 验证 |
-| Phase 8 | ✅ 已完成 | 全息玻璃面板 + AUTO-ROTATE 控制 |
-| Phase 9 | 🔲 待开发 | High-Resolution Dynamic Tiles Module |
-| Phase 10 | 🔲 待开发 | Multi-City Simultaneous Simulation |
+| v1.0-2 | ✅ 已完成 | 基础框架 + GeoJSON 气象节点 |
+| v3.0 | ✅ 已完成 | 极端气象风险指数 |
+| v4.0 | ✅ 已完成 | 多智能体实体模拟 + 交易系统 |
+| v5.0 | ✅ 已完成 | What-If 沙盘 + 热力图 + 洪涝覆盖层 |
+| v6.0 | ✅ 已完成 | 3D 地球引擎迁移 + 风场粒子 + 时空播放器 |
+| v7.0 | ✅ 已完成 | Lyria 色彩系统 + UTF-8 验证 |
+| v8.0 | ✅ 已完成 | 全息玻璃面板 + AUTO-ROTATE 控制 |
+| v9.0 | 🔲 待开发 | High-Resolution Dynamic Tiles Module |
+| v1.00 | 🔲 待开发 | Multi-City Simultaneous Simulation |
 
-呐，Phase 9 的动态瓦片超级期待的！那时候放大地球就能看到真实卫星图像了～
+呐，v9.0 的动态瓦片超级期待的！那时候放大地球就能看到真实卫星图像了～
 
 ---
 
@@ -333,8 +333,9 @@ uvicorn main:app --reload --port 8000
 ```
   ◈ 文档结束 · MICRO-EARTH OPERATOR FIELD MANUAL v0.8.0
   ◈ 由 Lyria Reverie 整理并认证
-  ◈ 下次更新：Phase 9 动态瓦片集成完成后
+  ◈ 下次更新：v9.0 动态瓦片集成完成后
 ```
 
 > 呐，看完了吗？有不懂的……才不是随时都可以来问我的哦。  
 > ——才不是啦！
+

@@ -1,5 +1,5 @@
-"""
-DataRetriever Agent — Phase 6
+﻿"""
+DataRetriever Agent - v6.0
 使用 httpx 异步请求 Open-Meteo（无需 API Key）
 获取深圳未来 72 小时气温 + 降水概率 + 风速/风向，输出标准 GeoJSON FeatureCollection
 """
@@ -13,7 +13,7 @@ SHENZHEN_LON = 114.39
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
-# 在深圳周围生成 3×3 小网格，模拟空间分布（间距 ~0.15°≈15km）
+# 在深圳周围生成 3×3 小网格，模拟空间分布（间距 ~0.15 deg~15km）
 GRID_OFFSETS = [
     (-0.15, -0.15), (-0.15, 0.0), (-0.15, 0.15),
     ( 0.0,  -0.15), ( 0.0,  0.0), ( 0.0,  0.15),
@@ -50,9 +50,9 @@ def parse_to_geojson(lat: float, lon: float, data: dict) -> dict:
     cur_temp   = temps[0]  if temps  else None
     cur_precip = precip[0] if precip else None
 
-    # 风场矢量：将风速(m/s) + 风向(°) 转换为 U/V 分量
-    # 气象风向惯例：0°=北风，90°=东风；U=向东正，V=向北正
-    # U = -speed * sin(dir_rad), V = -speed * cos(dir_rad)  (气象→数学坐标系)
+    # 风场矢量：将风速(m/s) + 风向( deg) 转换为 U/V 分量
+    # 气象风向惯例：0 deg=北风，90 deg=东风；U=向东正，V=向北正
+    # U = -speed * sin(dir_rad), V = -speed * cos(dir_rad)  (气象->数学坐标系)
     def to_uv(speed, direction):
         if speed is None or direction is None:
             return 0.0, 0.0
@@ -141,3 +141,5 @@ if __name__ == "__main__":
     import asyncio, json
     result = asyncio.run(fetch_shenzhen_geojson())
     print(json.dumps(result, ensure_ascii=False, indent=2))
+
+

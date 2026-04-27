@@ -1,4 +1,4 @@
-import "./index.css";
+﻿import "./index.css";
 import { useState, useEffect, useRef, Component } from "react";
 import { motion } from "framer-motion";
 
@@ -15,7 +15,7 @@ class ErrorBoundary extends Component {
           height: "100%", background: "#0a0a0a", fontFamily: "'Courier New', monospace", padding: 16,
         }}>
           <div style={{ color: "#FF0055", fontWeight: 900, fontSize: 13, letterSpacing: "0.1em", marginBottom: 8 }}>
-            ◈ MAP ENGINE ERROR
+            [!] MAP ENGINE ERROR
           </div>
           <div style={{ color: "#555", fontSize: 11, textAlign: "center", maxWidth: 240 }}>
             {String(this.state.error?.message ?? "Unknown error")}
@@ -51,7 +51,7 @@ const REGIONS = [
   { label: "纽约", lat: 40.71, lon: -74.01 },
 ];
 
-/* ── Phase 6: Temporal Scrubber 时空播放器 ── */
+/* ── v6.0: Temporal Scrubber 时空播放器 ── */
 function TemporalScrubber() {
   const { windfield, timelineHour, setTimelineHour } = useAgentStore();
   const [playing, setPlaying] = useState(false);
@@ -155,7 +155,7 @@ function TemporalScrubber() {
             onMouseUp={(e)   => { e.currentTarget.style.transform = ""; }}
             onMouseLeave={(e)=> { e.currentTarget.style.transform = ""; }}
           >
-            {playing ? "⏸ PAUSE" : "▶ PLAY"}
+            {playing ? "[||] PAUSE" : "[>] PLAY"}
           </button>
         </div>
 
@@ -247,7 +247,7 @@ function TemporalScrubber() {
 
 /* ── 全息粒子代码雨背景（仅左列） ── */
 function HoloParticlesBg() {
-  const chars = ["0","1","A","F","3","7","B","E","#","◈","⟨","⟩","∇","◉","✦"];
+  const chars = ["0","1","A","F","3","7","B","E","#","*","<",">","V","@","+"];
   const cols = 8;
   return (
     <div style={{
@@ -384,7 +384,7 @@ function StatusBadge({ status }) {
       fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 900,
       padding: "2px 10px", display: "inline-flex", alignItems: "center", gap: 5, letterSpacing: "0.08em",
     }}>
-      <span style={{ color: cfg.dot, fontSize: 13 }}>◉</span>{status}
+      <span style={{ color: cfg.dot, fontSize: 13 }}>[*]</span>{status}
     </span>
   );
 }
@@ -449,7 +449,7 @@ function AppInner() {
             letterSpacing: "0.06em", fontWeight: 700,
             border: "1.5px solid #fff", padding: "1px 6px",
           }}>
-            v0.8.0 · PHASE 8
+            v0.8.0 · v8.0
           </span>
         </div>
 
@@ -627,15 +627,15 @@ function AppInner() {
             </div>
           </motion.div>
 
-          {/* 系统状态 — 高饱和撞色块 */}
+          {/* 系统状态 — 粉白亮化 */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
-            <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #000", overflow: "hidden" }}>
-              {/* 标题栏 */}
-              <div style={{ background: "#000", padding: "4px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 900, color: "#00FF00", letterSpacing: "0.12em" }}>
-                  ▶ SYSTEM STATUS
+            <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #FF69B4", overflow: "hidden" }}>
+              {/* 标题栏 — 霓虹粉底 */}
+              <div style={{ background: "#FF1493", padding: "4px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 900, color: "#fff", letterSpacing: "0.12em" }}>
+                  SYSTEM STATUS
                 </span>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#FFEE00" }}>ONLINE</span>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#FFE0EF", fontWeight: 700 }}>ONLINE</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
                 {sysItems.map(({ label, val, bg, color }, idx) => (
@@ -653,7 +653,7 @@ function AppInner() {
             </div>
           </motion.div>
 
-          {/* Phase 5: What-If 灾害沙盘 */}
+          {/* v5.0: What-If 灾害沙盘 */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }}>
             <WhatIfSandbox />
           </motion.div>
@@ -702,7 +702,7 @@ function AppInner() {
           {/* 地图卡片 */}
           <div style={{
             border: "3px solid #000", boxShadow: "6px 6px 0 0 #000",
-            background: "#fff", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden",
+            background: "#000", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden",
             minHeight: 0,
           }}>
             {/* 地图标题栏 — 明黄底 */}
@@ -716,7 +716,7 @@ function AppInner() {
                 letterSpacing: "0.06em", textTransform: "uppercase", color: "#000",
                 whiteSpace: "nowrap",
               }}>
-                ◈ GEO VIZ — {region.toUpperCase()} WEATHER GRID
+                [*] GEO VIZ -- {region.toUpperCase()} WEATHER GRID
               </span>
               <div style={{
                 background: "#FF69B4", color: "#000", border: "none",
@@ -733,32 +733,32 @@ function AppInner() {
             </div>
           </div>
 
-          {/* Phase 6: Temporal Scrubber — 地图正下方 */}
+          {/* v6.0: Temporal Scrubber — 地图正下方 */}
           <TemporalScrubber />
         </motion.div>
 
-        {/* 右侧：Agent 终端 */}
+        {/* 右侧：Agent 终端 — 粉白主题 */}
         <motion.div
           initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
-          style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+          style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", height: "100%" }}
         >
-          {/* Tab — Memphis撞色 */}
+          {/* Tab 标题栏 — 霓虹粉主色 */}
           <div style={{ display: "flex", border: "3px solid #000", borderBottom: "none", flexShrink: 0 }}>
-            {["STREAM", "CONFIG"].map((tab, i) => (
+            {["STREAM", "LOG"].map((tab, i) => (
               <div key={tab} style={{
                 flex: 1, padding: "6px 0", fontFamily: "'Courier New', monospace", fontWeight: 900,
                 fontSize: 12, letterSpacing: "0.1em", textAlign: "center",
                 borderRight: i === 0 ? "2px solid #000" : "none",
-                background: i === 0 ? "#00FF00" : "#f0f0f0",
-                color: i === 0 ? "#000" : "#aaa",
-                boxShadow: i === 0 ? "inset 0 0 0 0 transparent" : "none",
+                background: i === 0 ? "#FF1493" : "#ffe0ef",
+                color: i === 0 ? "#fff" : "#FF69B4",
               }}>{tab}</div>
             ))}
           </div>
           <div style={{
             border: "3px solid #000", borderTop: "none",
-            boxShadow: "5px 5px 0 0 #6200EE",
-            flex: 1, display: "flex", flexDirection: "column", background: "#0a0a0a",
+            boxShadow: "5px 5px 0 0 #FF69B4",
+            flex: 1, display: "flex", flexDirection: "column",
+            background: "#fff",
             minHeight: 0, overflow: "hidden",
           }}>
             <AgentTerminal region={region} lat={lat} lon={lon} />
@@ -784,11 +784,12 @@ function AppInner() {
         height: 36, flexShrink: 0, padding: "0 16px",
       }}>
         <span style={{ color: "#FFEE00", fontWeight: 700 }}>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 8</span>
+        <span style={{ color: "#FF69B4", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · v8.0</span>
         <span style={{ color: geojsonData ? "#00FF00" : "#333", fontWeight: 700 }}>
-          {geojsonData ? `✓ open-meteo.com` : "// NO DATA"}
+          {geojsonData ? `[OK] open-meteo.com` : "// NO DATA"}
         </span>
       </footer>
     </div>
   );
 }
+

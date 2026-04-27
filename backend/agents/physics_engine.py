@@ -1,7 +1,7 @@
-"""
-PhysicsEngine Agent — Phase 5
+﻿"""
+PhysicsEngine Agent - v5.0
 极端天气风险指数推演（Extreme Weather Risk Index, 0~100）
-+ 超分辨率空间插值（Bilinear Interpolation 25km→1km 模拟）
++ 超分辨率空间插值（Bilinear Interpolation 25km->1km 模拟）
 + What-If 环境干预（temp_offset / precip_multiplier）
 """
 # -*- coding: utf-8 -*-
@@ -9,13 +9,13 @@ import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 import math
 
 
-# ── 超分辨率空间插值 ────────────────────────────────────────────────────────────
+# -- 超分辨率空间插值 ------------------------------------------------------------
 def super_resolve_grid(features: list, center_lat: float, center_lon: float,
                        resolution: int = 12,
                        temp_offset: float = 0.0,
                        precip_multiplier: float = 1.0) -> dict:
     """
-    Phase 5: 超分辨率空间插值
+    v5.0: 超分辨率空间插值
     将稀疏的观测节点（~25km 间距）通过反距离权重插值（IDW）上采样为
     resolution×resolution 的高分辨率矩阵（模拟 1km 精度）。
 
@@ -23,8 +23,8 @@ def super_resolve_grid(features: list, center_lat: float, center_lon: float,
         features: GeoJSON features 列表
         center_lat/center_lon: 城市中心坐标
         resolution: 输出网格边长（默认 12×12 = 144 格）
-        temp_offset: What-If — 全局温度偏移（°C）
-        precip_multiplier: What-If — 降水概率倍率
+        temp_offset: What-If - 全局温度偏移（ degC）
+        precip_multiplier: What-If - 降水概率倍率
 
     Returns:
         {
@@ -135,7 +135,7 @@ def super_resolve_grid(features: list, center_lat: float, center_lon: float,
 def compute_wind_vector_field(features: list, center_lat: float, center_lon: float,
                               resolution: int = 8) -> dict:
     """
-    Phase 6: 将网格点的 72h 风场时序数据聚合为标准矢量场结构。
+    v6.0: 将网格点的 72h 风场时序数据聚合为标准矢量场结构。
 
     返回结构：
     {
@@ -222,7 +222,7 @@ def compute_wind_vector_field(features: list, center_lat: float, center_lon: flo
 
 
 def compute_indices(raw: dict) -> dict:
-    """基础热力学指数（Phase 1）"""
+    """基础热力学指数（v1.0）"""
     T = raw.get("temperature", 20.0)
     H = raw.get("humidity", 60.0)
     W = raw.get("wind_speed", 10.0)
@@ -239,11 +239,11 @@ def compute_indices(raw: dict) -> dict:
 
 def compute_risk_index(features: list) -> dict:
     """
-    Phase 3：极端天气风险指数 (0~100)
+    v3.0：极端天气风险指数 (0~100)
 
     算法：
     - 基础分：降水概率权重最高（40分上限）
-    - 温度异常加分：极寒(<5°C)或极热(>35°C) 各贡献最多30分
+    - 温度异常加分：极寒(<5 degC)或极热(>35 degC) 各贡献最多30分
     - 综合分：多个网格点取加权平均
     返回: risk_index(0-100), risk_level, hourly_temps(未来24h均值序列)
     """
@@ -331,3 +331,5 @@ def compute_risk_index(features: list) -> dict:
         "hourly_temps": hourly_temps,
         "grid_scores":  [round(s, 1) for s in scores],
     }
+
+

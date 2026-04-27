@@ -1,13 +1,13 @@
-"""
-Micro-Earth Orchestrator — Phase 6
+﻿"""
+Micro-Earth Orchestrator - v6.0
 LangGraph StateGraph:
   Input -> Geocoder -> DataRetriever -> PhysicsEngine -> EntitySimulator -> Output
-Phase 6 新增：
+v6.0 新增：
   - DataRetriever 获取 72h 风速/风向数据
   - PhysicsEngine 计算矢量场（U/V 分量）
   - windfield 事件推送 72h 风场时序到前端
 """
-# ── UTF-8 编码保障（防 Windows GBK 报错）──────────────────────────────────────
+# -- UTF-8 编码保障（防 Windows GBK 报错）--------------------------------------
 import os as _os
 import sys as _sys
 import io as _io
@@ -23,7 +23,7 @@ if hasattr(_sys.stdout, "buffer"):
 if hasattr(_sys.stderr, "buffer"):
     try: _sys.stderr = _io.TextIOWrapper(_sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
     except Exception: pass
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 import asyncio
 import json
@@ -33,15 +33,29 @@ from typing import TypedDict, Annotated, List, Optional, Any
 from langgraph.graph import StateGraph, END
 import operator
 
-_print = lambda *a, **k: print(*a, **{**k, "flush": True})
+def _print(*a, **k):
+    """UTF-8 safe print：在 Windows GBK 终端下对所有中文字符做 replace 兜底"""
+    try:
+        print(*a, **{**k, "flush": True})
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        safe = " ".join(
+            str(x).encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+            for x in a
+        )
+        try:
+            sys.stdout.buffer.write((safe + "\n").encode("utf-8", errors="replace"))
+            sys.stdout.buffer.flush()
+        except Exception:
+            pass
 
 from agents.data_retriever import fetch_shenzhen_geojson
 from agents.physics_engine import compute_indices, compute_risk_index, super_resolve_grid, compute_wind_vector_field
 from agents.geocoder import geocode
 from agents.entity_simulator import generate_entities, simulate_entities
+from agents.llm_adapter import analyze_weather, parse_city_intent, get_backend_info
 
 
-# ── 状态定义 ────────────────────────────────────────────────────────────────
+# -- 状态定义 ----------------------------------------------------------------
 class AgentState(TypedDict):
     logs:             Annotated[List[str], operator.add]
     city_query:       str
@@ -52,37 +66,44 @@ class AgentState(TypedDict):
     geojson:          Optional[dict]
     processed_data:   dict
     risk_data:        dict
-    entity_data:      Optional[dict]   # Phase 4: 实体模拟结果
-    heatmap_data:     Optional[dict]   # Phase 5: 超分辨率热力矩阵
-    windfield_data:   Optional[dict]   # Phase 6: 72h 风场矢量场
-    temp_offset:      float            # Phase 5 What-If: 温度偏移
-    precip_multiplier: float           # Phase 5 What-If: 降水倍率
+    entity_data:      Optional[dict]   # v4.0: 实体模拟结果
+    heatmap_data:     Optional[dict]   # v5.0: 超分辨率热力矩阵
+    windfield_data:   Optional[dict]   # v6.0: 72h 风场矢量场
+    temp_offset:      float            # v5.0 What-If: 温度偏移
+    precip_multiplier: float           # v5.0 What-If: 降水倍率
 
 
-# ── 节点：Geocoder ──────────────────────────────────────────────────────────
+# -- 节点：Geocoder ----------------------------------------------------------
 def node_geocoder(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
     city = state.get("city_query") or state.get("region", "深圳")
-    _print(f"[{ts}] [Geocoder] 解析城市坐标 → '{city}'...")
+    _print(f"[{ts}] [Geocoder] 解析城市坐标 -> '{city}'...")
 
     try:
+        # v9.0: LLM 意图解析（自然语言 -> 城市名）
+        # stub 模式下 parse_city_intent 直接返回原始输入，行为不变
+        parsed_city = asyncio.run(parse_city_intent(city))
+        if parsed_city and parsed_city != city:
+            _print(f"[{ts}] [Geocoder] LLM 解析意图: '{city}' -> '{parsed_city}'")
+            city = parsed_city
+
         lat, lon, name = asyncio.run(geocode(city))
-        log = f"[{ts}] [Geocoder] ✓ '{city}' → {name} ({lat:.4f}, {lon:.4f})"
+        log = f"[{ts}] [Geocoder] * '{city}' -> {name} ({lat:.4f}, {lon:.4f})"
         _print(log)
         return {"logs": [log], "region": name, "lat": lat, "lon": lon}
     except Exception as e:
-        err = f"[{ts}] [Geocoder] ✗ 解析失败: {e}，保持当前坐标"
+        err = f"[{ts}] [Geocoder] * 解析失败: {e}，保持当前坐标"
         _print(err)
         return {"logs": [err]}
 
 
-# ── 节点：FetchData ─────────────────────────────────────────────────────────
+# -- 节点：FetchData ---------------------------------------------------------
 def node_fetch_data(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
     lat = state.get("lat", 22.69)
     lon = state.get("lon", 114.39)
     region = state.get("region", "未知")
-    _print(f"[{ts}] [DataRetriever] 请求 Open-Meteo — {region} ({lat:.4f}, {lon:.4f})...")
+    _print(f"[{ts}] [DataRetriever] 请求 Open-Meteo - {region} ({lat:.4f}, {lon:.4f})...")
 
     try:
         geojson = asyncio.run(fetch_shenzhen_geojson(lat, lon))
@@ -97,13 +118,28 @@ def node_fetch_data(state: AgentState) -> dict:
         geojson.setdefault("metadata", {})["region"] = region
         geojson["metadata"]["center"] = [lon, lat]
 
-        log1 = f"[{ts}] [DataRetriever] ✓ {region} 气象网格获取完毕 — {feature_count} 个网格点"
-        log2 = f"[{ts}] [DataRetriever] 当前温度: {raw['temperature']}°C | 网格数: {feature_count}"
+        log1 = f"[{ts}] [DataRetriever] * {region} 气象网格获取完毕 - {feature_count} 个网格点"
+        log2 = f"[{ts}] [DataRetriever] 当前温度: {raw['temperature']} degC | 网格数: {feature_count}"
         _print(log1); _print(log2)
-        return {"logs": [log1, log2], "raw_data": raw, "geojson": geojson}
+
+        # v9.0: LLM 气象摘要分析（stub 模式跳过，不影响现有行为）
+        weather_summary = asyncio.run(analyze_weather({
+            "region": region,
+            "temperature": raw["temperature"],
+            "precipitation": geojson["features"][0]["properties"].get("precipitation_probability", "--") if geojson["features"] else "--",
+            "wind_speed": raw["wind_speed"],
+            "risk_level": "PENDING",  # 此时 risk 尚未计算，占位
+        }))
+        logs_out = [log1, log2]
+        if weather_summary:
+            llm_log = f"[{ts}] [LLM·Lyria] {weather_summary}"
+            _print(llm_log)
+            logs_out.append(llm_log)
+
+        return {"logs": logs_out, "raw_data": raw, "geojson": geojson}
 
     except Exception as e:
-        err_log = f"[{ts}] [DataRetriever] ✗ 获取失败: {e}，使用 Mock 数据"
+        err_log = f"[{ts}] [DataRetriever] * 获取失败: {e}，使用 Mock 数据"
         _print(err_log)
         mock = _make_mock_geojson(lat, lon, region)
         return {
@@ -137,7 +173,7 @@ def _make_mock_geojson(lat: float, lon: float, region: str = "Unknown") -> dict:
     }
 
 
-# ── 节点：PhysicsEngine ─────────────────────────────────────────────────────
+# -- 节点：PhysicsEngine -----------------------------------------------------
 def node_physics(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
     _print(f"[{ts}] [PhysicsEngine] 启动极端天气推演 + 超分辨率插值...")
@@ -153,7 +189,7 @@ def node_physics(state: AgentState) -> dict:
     thermo = compute_indices(raw)
     risk   = compute_risk_index(features)
 
-    # Phase 5: 超分辨率插值
+    # v5.0: 超分辨率插值
     heatmap = super_resolve_grid(
         features, lat, lon,
         resolution=12,
@@ -162,23 +198,23 @@ def node_physics(state: AgentState) -> dict:
     )
     flood_cnt = len(heatmap.get("flood_zones", []))
 
-    # Phase 6: 72h 风场矢量场
+    # v6.0: 72h 风场矢量场
     windfield = compute_wind_vector_field(features, lat, lon)
     total_hrs = windfield.get("total_hours", 0)
     avg_spd_now = windfield["hourly_vectors"][0]["avg_speed"] if windfield.get("hourly_vectors") else 0
 
     log = (
-        f"[{ts}] [PhysicsEngine] ✓ 推演完成 | "
+        f"[{ts}] [PhysicsEngine] * 推演完成 | "
         f"风险指数={risk['risk_index']} [{risk['risk_level']}] | "
         f"热力={thermo['heat_index']:.1f} | 风冷={thermo['wind_chill']:.1f} | "
         f"超分辨率网格=12×12 | 潜在洪涝格={flood_cnt} | "
-        f"风场时序={total_hrs}h | 当前风速≈{avg_spd_now}m/s"
+        f"风场时序={total_hrs}h | 当前风速~{avg_spd_now}m/s"
     )
     _print(log)
     if temp_offset != 0.0 or precip_multiplier != 1.0:
         wi_log = (
-            f"[{ts}] [PhysicsEngine] ⚡ What-If: 温度偏移={temp_offset:+.1f}°C, "
-            f"降水倍率=×{precip_multiplier:.2f}"
+            f"[{ts}] [PhysicsEngine] [WhatIf] temp_offset={temp_offset:+.1f} degC, "
+            f"precip_mult=x{precip_multiplier:.2f}"
         )
         _print(wi_log)
         logs = [log, wi_log]
@@ -195,40 +231,44 @@ def node_physics(state: AgentState) -> dict:
     }
 
 
-# ── 节点：EntitySimulator ───────────────────────────────────────────────────
+# -- 节点：EntitySimulator ---------------------------------------------------
 def node_entity_simulator(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
-    _print(f"[{ts}] [EntitySimulator] 初始化多智能体沙盒...")
+    _print(f"[{ts}] [EntitySimulator] v7.0 - 自主疏散推演启动...")
 
     lat = state.get("lat", 22.69)
     lon = state.get("lon", 114.39)
-    risk_data = state.get("risk_data", {})
+    risk_data  = state.get("risk_data", {})
     risk_index = risk_data.get("risk_index", 0)
     risk_level = risk_data.get("risk_level", "UNKNOWN")
 
-    # 生成实体
+    # 生成实体（以城市中心为灾害原点）
     entities = generate_entities(lat, lon, count=100)
 
-    # 执行一轮模拟（初始推演）
-    result = simulate_entities(entities, risk_index, risk_level, tick=0)
+    # v7.0: 传入灾害坐标 = 城市中心（即 What-If 滑块模拟的风险热区中心）
+    result = simulate_entities(
+        entities, risk_index, risk_level,
+        disaster_lat=lat, disaster_lon=lon,
+        tick=0,
+    )
 
     stats = result["stats"]
     log1 = (
-        f"[{ts}] [EntitySimulator] ✓ 生成 {stats['total_entities']} 个动态实体 | "
-        f"风险驱动: {risk_index}/100"
+        f"[{ts}] [EntitySimulator] * 生成 {stats['total_entities']} 个 Kinetic Entities | "
+        f"灾害风险: {risk_index}/100 [{risk_level}]"
     )
     log2 = (
-        f"[{ts}] [EntitySimulator] 资产均值: {stats['avg_asset_value']} | "
-        f"恐慌: {stats['panic_count']} | 压力: {stats['stressed_count']} | "
-        f"正常: {stats['normal_count']}"
+        f"[{ts}] [EntitySimulator] 安全: {stats['safe_count']} | "
+        f"疏散中: {stats['evacuating_count']} | 已抵达安全区: {stats['rescued_count']}"
     )
-    if result["trade_events"]:
-        log3 = f"[{ts}] [EntitySimulator] 触发 {len(result['trade_events'])} 笔交易事件"
-        _print(log1); _print(log2); _print(log3)
-        logs = [log1, log2, log3]
-    else:
-        _print(log1); _print(log2)
-        logs = [log1, log2]
+    logs = [log1, log2]
+
+    # 物理灾害警告日志直接 _print 到终端
+    for evac_log in result.get("evac_logs", []):
+        _print(evac_log)
+        logs.append(evac_log)
+
+    _print(log1); _print(log2)
 
     return {
         "logs": logs,
@@ -236,29 +276,32 @@ def node_entity_simulator(state: AgentState) -> dict:
     }
 
 
-# ── 节点：Finish ────────────────────────────────────────────────────────────
+# -- 节点：Finish ------------------------------------------------------------
 def node_finish(state: AgentState) -> dict:
     ts = time.strftime("%H:%M:%S")
     risk = state.get("risk_data", {})
     entity_data = state.get("entity_data", {})
     heatmap = state.get("heatmap_data", {})
     windfield = state.get("windfield_data", {})
-    stats = entity_data.get("stats", {})
-    level = risk.get("risk_level", "UNKNOWN")
-    idx = risk.get("risk_index", 0)
-    avg_val = stats.get("avg_asset_value", "—")
+    stats     = entity_data.get("stats", {})
+    level     = risk.get("risk_level", "UNKNOWN")
+    idx       = risk.get("risk_index", 0)
     flood_cnt = len(heatmap.get("flood_zones", [])) if heatmap else 0
-    wind_hrs = windfield.get("total_hours", 0) if windfield else 0
+    wind_hrs  = windfield.get("total_hours", 0) if windfield else 0
+    evac_cnt  = stats.get("evacuating_count", 0)
+    resc_cnt  = stats.get("rescued_count", 0)
+    safe_cnt  = stats.get("safe_count", 0)
     msg = (
-        f"[{ts}] [Finish] ✓ Phase 6 工作流完毕 | "
-        f"风险: {level} ({idx}/100) | 全局均值资产: {avg_val} | "
+        f"[{ts}] [Finish] * v7.0 工作流完毕 | "
+        f"风险: {level} ({idx}/100) | "
+        f"安全: {safe_cnt} | 疏散中: {evac_cnt} | 已入安全区: {resc_cnt} | "
         f"洪涝预警格: {flood_cnt} | 风场时序: {wind_hrs}h"
     )
     _print(msg)
     return {"logs": [msg]}
 
 
-# ── 图构建 ──────────────────────────────────────────────────────────────────
+# -- 图构建 ------------------------------------------------------------------
 def build_graph() -> StateGraph:
     g = StateGraph(AgentState)
     g.add_node("Geocoder",         node_geocoder)
@@ -289,7 +332,7 @@ async def run_graph_stream(
     """
     异步生成器：逐步 yield 事件给 WebSocket 推流
     事件类型：start | log | geocoded | geojson | risk | heatmap | entities | trade | done
-    Phase 5 新增 heatmap 事件、What-If 参数
+    v5.0 新增 heatmap 事件、What-If 参数
     """
     state: AgentState = {
         "logs": [],
@@ -311,10 +354,10 @@ async def run_graph_stream(
     ts = time.strftime("%H:%M:%S")
     wi_str = ""
     if temp_offset != 0.0 or precip_multiplier != 1.0:
-        wi_str = f" | ⚡ What-If: T{temp_offset:+.1f}°C, P×{precip_multiplier:.2f}"
+        wi_str = f" | [WhatIf] T{temp_offset:+.1f} degC, Px{precip_multiplier:.2f}"
     yield {
         "event": "start",
-        "message": f"[{ts}] [Orchestrator] Phase 6 工作流启动 — 查询: '{city_query or region}'{wi_str}"
+        "message": f"[{ts}] [Orchestrator] v6.0 工作流启动 - 查询: '{city_query or region}'{wi_str}"
     }
 
     for graph_event in micro_earth_graph.stream(state):
@@ -329,7 +372,7 @@ async def run_graph_stream(
                 yield {
                     "event": "geocoded",
                     "node": node_name,
-                    "message": f"[{time.strftime('%H:%M:%S')}] [Geocoder] 坐标已更新 → ({node_output['lat']:.4f}, {node_output['lon']:.4f})",
+                    "message": f"[{time.strftime('%H:%M:%S')}] [Geocoder] 坐标已更新 -> ({node_output['lat']:.4f}, {node_output['lon']:.4f})",
                     "data": {
                         "region": node_output.get("region", region),
                         "lat": node_output["lat"],
@@ -361,7 +404,7 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
-            # Phase 5: 超分辨率热力矩阵
+            # v5.0: 超分辨率热力矩阵
             if node_output.get("heatmap_data"):
                 hm = node_output["heatmap_data"]
                 flood_cnt = len(hm.get("flood_zones", []))
@@ -377,7 +420,7 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
-            # Phase 6: 72h 风场矢量场
+            # v6.0: 72h 风场矢量场
             if node_output.get("windfield_data"):
                 wf = node_output["windfield_data"]
                 total_hrs = wf.get("total_hours", 0)
@@ -392,7 +435,7 @@ async def run_graph_stream(
                 }
                 await asyncio.sleep(0.1)
 
-            # Phase 4: 实体数据推送
+            # v4.0: 实体数据推送
             if node_output.get("entity_data"):
                 ed = node_output["entity_data"]
                 entities = ed.get("entities", [])
@@ -419,23 +462,27 @@ async def run_graph_stream(
 
                 for evt in trade_events:
                     action_map = {
-                        "EMERGENCY_SELL":     "紧急抛售",
-                        "FORCED_LIQUIDATION": "强制清仓",
-                        "DISTRESS_SWAP":      "恐慌互换",
-                        "HEDGE_SWAP":         "对冲互换",
-                        "PARTIAL_SELL":       "部分减仓",
-                        "RISK_TRANSFER":      "风险转移",
-                        "DEFENSIVE_REBALANCE":"防御性再平衡",
-                        "SHORT_HEDGE":        "空头对冲",
-                        "REBALANCE":          "组合再平衡",
-                        "HOLD":               "持仓观望",
-                        "MICRO_ADJUST":       "微幅调仓",
+                        "EMERGENCY_EVACUATE": "Emergency Evac + AMM Swap",
+                        "EMERGENCY_SELL":     "Emergency Sell",
+                        "FORCED_LIQUIDATION": "Forced Liquidation",
+                        "DISTRESS_SWAP":      "Distress Swap",
+                        "HEDGE_SWAP":         "Hedge Swap",
+                        "PARTIAL_SELL":       "Partial Sell",
+                        "RISK_TRANSFER":      "Risk Transfer",
+                        "DEFENSIVE_REBALANCE":"Defensive Rebalance",
+                        "SHORT_HEDGE":        "Short Hedge",
+                        "REBALANCE":          "Rebalance",
+                        "HOLD":               "Hold",
+                        "MICRO_ADJUST":       "Micro Adjust",
                     }
                     action_cn = action_map.get(evt["action"], evt["action"])
+                    # v8.0: 携带 AMM 价格信息
+                    amm_info = ""
+                    if evt.get("amm_price") is not None:
+                        amm_info = f" | AMM:{evt['amm_price']:.2f}"
                     msg = (
-                        f"[{evt['ts']}] Entity #{evt['entity_id']:03d} "
-                        f"资产跌 {evt['depreciation_pct']}% → {evt['asset_value']:.0f} "
-                        f"| {action_cn}"
+                        f"[{evt['ts']}] Entity #{evt.get('entity_id', 0):03d} "
+                        f"| {action_cn}{amm_info}"
                     )
                     yield {
                         "event": "trade",
@@ -446,7 +493,7 @@ async def run_graph_stream(
                     await asyncio.sleep(0.08)
 
     ts = time.strftime("%H:%M:%S")
-    yield {"event": "done", "message": f"[{ts}] [Orchestrator] Phase 6 所有节点执行完毕 ✓"}
+    yield {"event": "done", "message": f"[{ts}] [Orchestrator] v6.0 所有节点执行完毕 *"}
 
 
 if __name__ == "__main__":
@@ -454,3 +501,5 @@ if __name__ == "__main__":
         async for evt in run_graph_stream(city_query="成都"):
             print(evt.get("message", ""))
     asyncio.run(_test())
+
+

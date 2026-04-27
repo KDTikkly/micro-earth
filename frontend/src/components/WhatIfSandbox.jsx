@@ -1,5 +1,5 @@
-/**
- * WhatIfSandbox — Phase 5
+﻿/**
+ * WhatIfSandbox — v5.0
  * 灾害沙盘控制台：Memphis 赛博风格滑块面板
  * 用户拖动滑块后，触发 What-If API 重新推演并更新热力矩阵
  */
@@ -102,7 +102,7 @@ export default function WhatIfSandbox() {
     const ts = new Date().toLocaleTimeString();
     appendLog({
       event: "log", ts,
-      message: `[${ts}] [WhatIf] ⚡ T${tempOffset >= 0 ? "+" : ""}${tempOffset}°C × P×${precipMultiplier.toFixed(2)} — 重新推演...`,
+      message: `[${ts}] [WhatIf] [!] T${tempOffset >= 0 ? "+" : ""}${tempOffset} degC x P x${precipMultiplier.toFixed(2)} -- re-running...`,
       node: "WhatIf",
     });
 
@@ -126,7 +126,7 @@ export default function WhatIfSandbox() {
         const ts2 = new Date().toLocaleTimeString();
         appendLog({
           event: "heatmap", ts: ts2,
-          message: `[${ts2}] [WhatIf] ✓ 推演完成 | 风险=${data.risk_data?.risk_index} [${data.risk_data?.risk_level}] | 洪涝格=${data.heatmap?.flood_zones?.length ?? 0}`,
+          message: `[${ts2}] [WhatIf] [OK] simulation done | risk=${data.risk_data?.risk_index} [${data.risk_data?.risk_level}] | flood=${data.heatmap?.flood_zones?.length ?? 0}`,
           node: "WhatIf",
         });
       }
@@ -185,12 +185,12 @@ export default function WhatIfSandbox() {
           fontFamily: "'Courier New', monospace", fontSize: 10,
           fontWeight: 900, color: "#fff", letterSpacing: "0.1em",
         }}>
-          ⚡ WHAT-IF SANDBOX
+          [!] WHAT-IF SANDBOX
         </span>
         <span style={{
           fontFamily: "'Courier New', monospace", fontSize: 9,
           color: "#ffccdd", fontWeight: 700,
-        }}>PHASE 5</span>
+        }}>v5.0</span>
       </div>
 
       {/* 面板体 — 黑底 */}
@@ -228,7 +228,7 @@ export default function WhatIfSandbox() {
               color: "#FFEE00", fontWeight: 700, letterSpacing: "0.06em",
               animation: "none",
             }}>
-              ▶ COMPUTING...
+              {"[>]"} COMPUTING...
             </div>
           ) : lastResult ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -247,7 +247,7 @@ export default function WhatIfSandbox() {
                   fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
                   padding: "2px 8px",
                 }}>
-                  ◈ {lastResult.floodCount} FLOOD ZONES
+                  [*] {lastResult.floodCount} FLOOD ZONES
                 </span>
               )}
             </div>
@@ -284,3 +284,4 @@ export default function WhatIfSandbox() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 /* ── 全局重置 ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -173,7 +173,7 @@ body {
   100% { transform: translateY(400px); opacity: 0; }
 }
 
-/* ── Phase 6: Temporal Scrubber — Memphis Range Input ──────── */
+/* ── v6.0: Temporal Scrubber — Memphis Range Input ──────── */
 /* 明黄大方形滑块，纯黑滑轨，赛博孟菲斯风格 */
 input[type="range"].temporal-scrubber {
   -webkit-appearance: none;
@@ -230,6 +230,79 @@ input[type="range"].temporal-scrubber:disabled::-webkit-slider-thumb {
 canvas {
   outline: none;
 }
+
+/* ── Agent 聊天室日志滚动条 — 霓虹风格 ──────────────────── */
+.agent-chat-log::-webkit-scrollbar {
+  width: 8px;
+}
+.agent-chat-log::-webkit-scrollbar-track {
+  background: #111;
+  border-left: 2px solid #1A1A1A;
+}
+.agent-chat-log::-webkit-scrollbar-thumb {
+  background: #00FF88;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 0 0 6px rgba(0,255,136,0.5);
+}
+.agent-chat-log::-webkit-scrollbar-thumb:hover {
+  background: #00FFAA;
+  box-shadow: 0 0 10px rgba(0,255,136,0.8);
+}
+.agent-chat-log::-webkit-scrollbar-corner {
+  background: #000;
+}
+/* Firefox */
+.agent-chat-log {
+  scrollbar-width: thin;
+  scrollbar-color: #00FF88 #111;
+}
+
+/* ── Agent 日志区 — 粉白明亮主题滚动条 ──────────────────── */
+.agent-log-pink::-webkit-scrollbar {
+  width: 8px;
+}
+.agent-log-pink::-webkit-scrollbar-track {
+  background: #fff0f5;
+  border-left: 2px solid #ffd6e8;
+}
+.agent-log-pink::-webkit-scrollbar-thumb {
+  background: #FF69B4;
+  border: 2px solid #fff;
+  border-radius: 0;
+  box-shadow: 0 0 4px rgba(255,105,180,0.4);
+}
+.agent-log-pink::-webkit-scrollbar-thumb:hover {
+  background: #FF1493;
+  box-shadow: 0 0 8px rgba(255,20,147,0.6);
+}
+.agent-log-pink {
+  scrollbar-width: thin;
+  scrollbar-color: #FF69B4 #fff0f5;
+}
+
+/* ── v8.0: TX Hash Log 滚动条 — 粉色 ──────────────────── */
+.tx-hash-log::-webkit-scrollbar {
+  width: 8px;
+}
+.tx-hash-log::-webkit-scrollbar-track {
+  background: #000;
+  border-left: 2px solid #1A1A1A;
+}
+.tx-hash-log::-webkit-scrollbar-thumb {
+  background: #FF1493;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 0 0 6px rgba(255,20,147,0.5);
+}
+.tx-hash-log::-webkit-scrollbar-thumb:hover {
+  background: #FF69B4;
+  box-shadow: 0 0 10px rgba(255,20,147,0.8);
+}
+.tx-hash-log {
+  scrollbar-width: thin;
+  scrollbar-color: #FF1493 #000;
+}
 /* 确保 Globe tooltip 使用孟菲斯字体 */
 .scene-tooltip {
   background: rgba(0,0,0,0.85) !important;
@@ -241,3 +314,4 @@ canvas {
   padding: 4px 8px !important;
   pointer-events: none !important;
 }
+

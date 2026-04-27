@@ -1,11 +1,16 @@
-/**
- * AnalyticsDashboard — Phase 4
- * 新增：Dynamic Asset Trading Hub
- * - 实时资产均值折线图
- * - 交易事件滚动日志
- * - 实体状态分布条
+﻿/**
+ * AnalyticsDashboard — v8.0  Cosmolyra Economic Layer
+ * Cyber Memphis Edition
+ * - AMM 动态资产价格折线图（Recharts · linear · 霓虹粉 4px 线）
+ * - 实体状态分布饼图（高对比纯色 · 4px 黑描边）
+ * - 交易哈希滚动日志（黑底绿字）
+ * - 风险指数主卡
  */
 import { motion } from "framer-motion";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
+} from "recharts";
 import { useAgentStore } from "../store/agentStore";
 
 const RISK_COLORS = {
@@ -17,111 +22,80 @@ const RISK_COLORS = {
   UNKNOWN:  { bg: "#f0f0f0", text: "#bbb",    accent: "#ddd"    },
 };
 
-const ACTION_COLORS = {
-  EMERGENCY_SELL:      "#FF0044",
-  FORCED_LIQUIDATION:  "#FF0044",
-  DISTRESS_SWAP:       "#FF6B00",
-  PARTIAL_SELL:        "#FF6B00",
-  HEDGE_SWAP:          "#FFE66D",
-  RISK_TRANSFER:       "#FFE66D",
-  DEFENSIVE_REBALANCE: "#9BF6FF",
-  SHORT_HEDGE:         "#9BF6FF",
-  REBALANCE:           "#B5EAD7",
-  HOLD:                "#C7B8EA",
-  MICRO_ADJUST:        "#C7B8EA",
-};
+const PIE_COLORS = ["#00BFFF", "#FF1493", "#00FF88"];
+const PIE_LABELS = ["SAFE", "EVACUATING", "RESCUED"];
 
-// ── 极简折线图组件 ──────────────────────────────────────────
-function Sparkline({ data, width = "100%", height = 56 }) {
-  if (!data || data.length < 2) {
-    return (
-      <div style={{
-        height, display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Courier New', monospace", fontSize: 11, color: "#bbb",
-      }}>
-        // 等待数据...
-      </div>
-    );
-  }
-
-  const W = 260;
-  const H = height;
-  const pad = 4;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  const pts = data.map((v, i) => {
-    const x = pad + (i / (data.length - 1)) * (W - pad * 2);
-    const y = H - pad - ((v - min) / range) * (H - pad * 2);
-    return `${x},${y}`;
-  });
-
-  const polyline = pts.join(" ");
-  const last = pts[pts.length - 1].split(",");
-
-  // 填充区域
-  const areaPath = `M${pts[0]} L${pts.join(" L")} L${last[0]},${H} L${pad},${H} Z`;
-
+/* ── 卡片外壳 ── */
+function Card({ title, tag, children, accent = "#FF1493", style = {} }) {
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width, height, display: "block" }}>
-      {/* 填充区 */}
-      <path d={areaPath} fill="rgba(155,246,255,0.18)" />
-      {/* 折线 */}
-      <polyline points={polyline} fill="none" stroke="#9BF6FF" strokeWidth="2" strokeLinejoin="round" />
-      {/* 最新点高亮 */}
-      <circle cx={last[0]} cy={last[1]} r="3.5" fill="#FFE66D" stroke="#1A1A1A" strokeWidth="1.5" />
-    </svg>
+    <div style={{
+      background: "#fff",
+      border: "4px solid #000",
+      boxShadow: `6px 6px 0 0 ${accent}`,
+      flexShrink: 0,
+      ...style,
+    }}>
+      <div style={{
+        background: "#000",
+        borderBottom: "3px solid #000",
+        padding: "5px 12px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <span style={{ fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 11, color: accent, letterSpacing: "0.1em" }}>
+          {title}
+        </span>
+        {tag && (
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#666" }}>{tag}</span>
+        )}
+      </div>
+      {children}
+    </div>
   );
 }
 
 export default function AnalyticsDashboard({ riskData = null, region = "—" }) {
-  const risk      = riskData?.risk_index ?? null;
-  const level     = riskData?.risk_level ?? "UNKNOWN";
-  const summary   = riskData?.summary ?? "等待推演数据...";
-  const hourly    = riskData?.hourly_temps ?? [];
-  const isDanger  = level === "CRITICAL" || level === "HIGH";
-  const colorSet  = RISK_COLORS[level] ?? RISK_COLORS.UNKNOWN;
+  const risk     = riskData?.risk_index ?? null;
+  const level    = riskData?.risk_level ?? "UNKNOWN";
+  const summary  = riskData?.summary ?? "等待推演数据...";
+  const hourly   = riskData?.hourly_temps ?? [];
+  const isDanger = level === "CRITICAL" || level === "HIGH";
+  const colorSet = RISK_COLORS[level] ?? RISK_COLORS.UNKNOWN;
 
-  const maxTemp = hourly.length ? Math.max(...hourly) : 40;
-  const minTemp = hourly.length ? Math.min(...hourly) : 0;
+  const maxTemp  = hourly.length ? Math.max(...hourly) : 40;
+  const minTemp  = hourly.length ? Math.min(...hourly) : 0;
   const tempRange = maxTemp - minTemp || 1;
 
-  // Phase 4 数据
-  const entityData   = useAgentStore((s) => s.entityData);
-  const tradeLog     = useAgentStore((s) => s.tradeLog);
-  const assetHistory = useAgentStore((s) => s.assetHistory);
-  const stats        = entityData?.stats ?? null;
+  const entityData       = useAgentStore((s) => s.entityData);
+  const tradeLog         = useAgentStore((s) => s.tradeLog);
+  const ammPriceHistory  = useAgentStore((s) => s.ammPriceHistory);
+  const tradeHashLog     = useAgentStore((s) => s.tradeHashLog);
+  const stats            = entityData?.stats ?? null;
+
+  const safeCount       = stats?.safe_count       ?? stats?.normal_count ?? 0;
+  const evacuatingCount = stats?.evacuating_count ?? stats?.panic_count  ?? 0;
+  const rescuedCount    = stats?.rescued_count    ?? 0;
+  const total           = stats?.total_entities   ?? 100;
+  const disasterActive  = stats?.disaster_active  ?? false;
+
+  // AMM 折线图数据
+  const lineData = ammPriceHistory.length > 0
+    ? ammPriceHistory.map((p, i) => ({ i, price: p.price ?? 1000, t: p.t ?? i }))
+    : Array.from({ length: 12 }, (_, i) => ({ i, price: 1000, t: i }));
+
+  // 饼图数据
+  const pieData = [
+    { name: "SAFE",       value: Math.max(safeCount, 0) },
+    { name: "EVACUATING", value: Math.max(evacuatingCount, 0) },
+    { name: "RESCUED",    value: Math.max(rescuedCount, 0) },
+  ];
+  const hasPie = pieData.some((d) => d.value > 0);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%", overflow: "hidden" }}
-    >
-      {/* ── 风险指数主卡 ── */}
-      <div style={{
-        border: "3px solid #1A1A1A",
-        boxShadow: isDanger ? "6px 6px 0 0 #FF0044" : "5px 5px 0 0 #1A1A1A",
-        background: colorSet.bg,
-        position: "relative",
-        flexShrink: 0,
-      }}>
-        <div style={{
-          borderBottom: "2px solid #1A1A1A", padding: "6px 12px",
-          background: "#1A1A1A",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 12, color: "#FFE66D", letterSpacing: "0.1em" }}>
-            RISK ANALYTICS
-          </span>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#888" }}>
-            {region.toUpperCase()}
-          </span>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%", overflow: "hidden" }}>
 
-        <div style={{ padding: "12px 14px 10px" }}>
+      {/* ── 风险指数主卡 ── */}
+      <Card title="RISK ANALYTICS" tag={region.toUpperCase()} accent={isDanger ? "#FF0044" : "#FF1493"} style={{ flexShrink: 0 }}>
+        <div style={{ padding: "12px 14px 10px", background: colorSet.bg }}>
           {risk !== null ? (
             <>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 6 }}>
@@ -140,54 +114,35 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                   <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: colorSet.text, opacity: 0.7, fontWeight: 700 }}>/100</div>
                   <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: colorSet.text, opacity: 0.7 }}>RISK IDX</div>
                 </div>
-              </div>
-
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                background: "#1A1A1A", color: colorSet.accent,
-                padding: "3px 10px", marginBottom: 7,
-                fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 13,
-                letterSpacing: "0.1em",
-              }}>
-                {isDanger && <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.7, repeat: Infinity }}>⚠</motion.span>}
-                {level}
-              </div>
-
-              <div style={{ marginBottom: 7 }}>
-                <div style={{ height: 10, background: "rgba(0,0,0,0.2)", border: "2px solid #1A1A1A", position: "relative" }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${risk}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    style={{
-                      height: "100%",
-                      background: isDanger
-                        ? "repeating-linear-gradient(45deg,#fff,#fff 4px,transparent 4px,transparent 8px)"
-                        : "#1A1A1A",
-                    }}
-                  />
+                <div style={{
+                  marginLeft: "auto",
+                  background: "#000", color: colorSet.accent,
+                  padding: "3px 10px",
+                  fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 13,
+                  letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 5,
+                }}>
+                  {isDanger && <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.7, repeat: Infinity }}>!!</motion.span>}
+                  {level}
                 </div>
               </div>
-
-              <p style={{
-                fontFamily: "'Courier New', monospace", fontSize: 11,
-                color: colorSet.text, opacity: 0.85, lineHeight: 1.5, margin: 0,
-              }}>
+              <div style={{ height: 10, background: "rgba(0,0,0,0.15)", border: "2px solid #000", marginBottom: 7 }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${risk}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  style={{ height: "100%", background: isDanger ? "#FF0044" : "#1A1A1A" }}
+                />
+              </div>
+              <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: colorSet.text, opacity: 0.85, lineHeight: 1.5, margin: 0 }}>
                 {summary}
               </p>
-
               {level === "CRITICAL" && (
                 <motion.div
                   animate={{ opacity: [1, 0.2, 1] }}
                   transition={{ duration: 0.6, repeat: Infinity }}
-                  style={{
-                    marginTop: 8, border: "3px solid #1A1A1A", background: "#FFE66D",
-                    padding: "5px 0", textAlign: "center",
-                    fontFamily: "'Courier New', monospace",
-                    fontWeight: 900, fontSize: 16, letterSpacing: "0.15em", color: "#1A1A1A",
-                  }}
+                  style={{ marginTop: 8, border: "3px solid #000", background: "#FFE66D", padding: "5px 0", textAlign: "center", fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 16, letterSpacing: "0.15em", color: "#000" }}
                 >
-                  !! DANGER !!
+                  !! EVACUATION ALERT !!
                 </motion.div>
               )}
             </>
@@ -197,179 +152,139 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
             </p>
           )}
         </div>
-      </div>
+      </Card>
 
-      {/* ── Phase 4: Dynamic Asset Trading Hub ── */}
-      <div style={{
-        border: "3px solid #1A1A1A",
-        boxShadow: "4px 4px 0 0 #1A1A1A",
-        background: "#0D0D0D",
-        display: "flex", flexDirection: "column",
-        flex: 1, minHeight: 0, overflow: "hidden",
-      }}>
-        {/* 标题栏 */}
-        <div style={{
-          borderBottom: "2px solid #333",
-          padding: "6px 12px",
-          background: "#1A1A1A",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexShrink: 0,
-        }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 12, color: "#FFE66D", letterSpacing: "0.08em" }}>
-            ◈ ASSET TRADING HUB
-          </span>
-          {stats && (
-            <motion.span
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#00FF88", fontWeight: 700 }}
-            >
-              LIVE
-            </motion.span>
+      {/* ── AMM 动态资产价格折线图 ── */}
+      <Card title="AMM ASSET PRICE" tag="v8.0 · COSMOLYRA" accent="#FF1493" style={{ flexShrink: 0 }}>
+        <div style={{ padding: "10px 4px 6px", background: "#fff" }}>
+          <ResponsiveContainer width="100%" height={90}>
+            <LineChart data={lineData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+              <CartesianGrid stroke="#000" strokeWidth={1} strokeDasharray="0" />
+              <XAxis dataKey="i" hide />
+              <YAxis
+                tick={{ fontFamily: "'Courier New', monospace", fontSize: 9, fill: "#000", fontWeight: 700 }}
+                axisLine={{ stroke: "#000", strokeWidth: 2 }}
+                tickLine={{ stroke: "#000" }}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "#000", border: "2px solid #FF1493",
+                  fontFamily: "'Courier New', monospace", fontSize: 11, color: "#FF1493",
+                }}
+                labelStyle={{ color: "#FF1493" }}
+                formatter={(v) => [`${v.toFixed(2)}`, "PRICE"]}
+              />
+              <Line
+                type="linear"
+                dataKey="price"
+                stroke="#FF1493"
+                strokeWidth={4}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          {ammPriceHistory.length === 0 && (
+            <p style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#bbb", margin: "2px 12px 0", textAlign: "center" }}>
+              // 等待 AMM 交易数据...
+            </p>
           )}
         </div>
+      </Card>
 
-        {/* 实体状态分布条 */}
-        {stats ? (
-          <div style={{ padding: "8px 12px", borderBottom: "1px solid #222", flexShrink: 0 }}>
-            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-              <div style={{ flex: 1, textAlign: "center", background: "#0D3A5C", border: "1.5px solid #1A6AFF", padding: "4px 0" }}>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 18, fontWeight: 900, color: "#9BF6FF" }}>
-                  {stats.normal_count}
+      {/* ── 实体状态饼图 ── */}
+      {hasPie && (
+        <Card title="ENTITY STATUS" tag={`TOTAL ${total}`} accent="#00BFFF" style={{ flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "6px 8px", background: "#fff", gap: 10 }}>
+            <PieChart width={90} height={90}>
+              <Pie
+                data={pieData}
+                cx={40} cy={40}
+                innerRadius={0}
+                outerRadius={38}
+                dataKey="value"
+                strokeWidth={4}
+                stroke="#000000"
+                isAnimationActive={false}
+              >
+                {pieData.map((_, idx) => (
+                  <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+            <div style={{ flex: 1 }}>
+              {pieData.map((d, idx) => (
+                <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                  <div style={{ width: 12, height: 12, background: PIE_COLORS[idx], border: "2px solid #000", flexShrink: 0 }} />
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900, color: "#000" }}>
+                    {PIE_LABELS[idx]}
+                  </span>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 900, color: PIE_COLORS[idx], marginLeft: "auto", textShadow: `0 0 4px ${PIE_COLORS[idx]}` }}>
+                    {d.value}
+                  </span>
                 </div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#9BF6FF", letterSpacing: "0.06em" }}>NORMAL</div>
-              </div>
-              <div style={{ flex: 1, textAlign: "center", background: "#3A2D00", border: "1.5px solid #FFE66D", padding: "4px 0" }}>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 18, fontWeight: 900, color: "#FFE66D" }}>
-                  {stats.stressed_count}
-                </div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FFE66D", letterSpacing: "0.06em" }}>STRESSED</div>
-              </div>
-              <div style={{ flex: 1, textAlign: "center", background: "#3A0014", border: "1.5px solid #FF0044", padding: "4px 0" }}>
+              ))}
+              {disasterActive && (
                 <motion.div
-                  animate={stats.panic_count > 0 ? { opacity: [1, 0.5, 1] } : {}}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  style={{ fontFamily: "'Courier New', monospace", fontSize: 18, fontWeight: 900, color: "#FF0044" }}
+                  animate={{ opacity: [1, 0.4, 1] }}
+                  transition={{ duration: 0.7, repeat: Infinity }}
+                  style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF0044", fontWeight: 900, marginTop: 4, letterSpacing: "0.05em" }}
                 >
-                  {stats.panic_count}
+                  !! DISASTER ACTIVE
                 </motion.div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF0044", letterSpacing: "0.06em" }}>PANIC</div>
-              </div>
-            </div>
-
-            {/* 均值资产 */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#555", fontWeight: 700 }}>AVG ASSET</span>
-              <span style={{
-                fontFamily: "'Courier New', monospace", fontSize: 16, fontWeight: 900,
-                color: stats.avg_asset_value < 600 ? "#FF6B00" : "#00FF88",
-              }}>
-                {stats.avg_asset_value}
-              </span>
+              )}
             </div>
           </div>
-        ) : (
-          <div style={{ padding: "8px 12px", borderBottom: "1px solid #222", flexShrink: 0 }}>
-            <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#444", margin: 0 }}>
-              // 等待实体模拟器...
-            </p>
-          </div>
-        )}
+        </Card>
+      )}
 
-        {/* 资产历史折线图 */}
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid #222", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.08em" }}>
-              AVG ASSET CURVE
-            </span>
-            {assetHistory.length > 0 && (
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#555" }}>
-                {assetHistory.length} ticks
-              </span>
-            )}
-          </div>
-          <Sparkline data={assetHistory} height={52} />
-        </div>
-
-        {/* 交易事件滚动日志 */}
-        <div style={{
-          flex: 1, minHeight: 0, overflowY: "auto",
-          padding: "6px 10px",
-        }}>
-          {tradeLog.length === 0 ? (
-            <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#333", margin: 0, fontStyle: "italic" }}>
-              // 等待交易触发...
+      {/* ── 交易哈希日志 （黑底绿字等宽滚动）── */}
+      <Card title="TX HASH LOG" tag="LAST 50 TRADES" accent="#00FF88" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <div
+          className="tx-hash-log"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "scroll",
+            overflowX: "hidden",
+            background: "#000",
+            padding: "6px 10px",
+          }}
+        >
+          {tradeHashLog.length === 0 && tradeLog.length === 0 && (
+            <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#1a4a1a", margin: 0, fontStyle: "italic" }}>
+              // 等待交易事件...
             </p>
-          ) : (
-            tradeLog.map((evt, i) => {
-              const accentColor = ACTION_COLORS[evt.action] ?? "#9BF6FF";
-              const isPanic = evt.status === "PANIC";
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  style={{
-                    marginBottom: 4,
-                    padding: "4px 8px",
-                    borderLeft: `3px solid ${accentColor}`,
-                    background: isPanic ? "rgba(255,0,68,0.08)" : "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-                    <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#555" }}>
-                      {evt.ts}
-                    </span>
-                    <span style={{
-                      fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
-                      color: accentColor, letterSpacing: "0.04em",
-                    }}>
-                      {evt.action}
-                    </span>
-                  </div>
-                  <div style={{
-                    fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 700,
-                    color: isPanic ? "#FF6B6B" : "#ccc",
-                    marginTop: 1,
-                  }}>
-                    Entity #{String(evt.entity_id).padStart(3, "0")}
-                    <span style={{ color: "#555", fontWeight: 400, fontSize: 11 }}> ↓{evt.depreciation_pct}% → </span>
-                    <span style={{ color: accentColor }}>{evt.asset_value?.toFixed(0)}</span>
-                  </div>
-                </motion.div>
-              );
-            })
           )}
+          {/* 有真实哈希时显示哈希日志 */}
+          {tradeHashLog.map((t, i) => (
+            <div key={i} style={{ marginBottom: 3, display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#00BFFF", flexShrink: 0 }}>{t.ts}</span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF1493", flexShrink: 0, fontWeight: 900 }}>{t.action?.slice(0, 8)}</span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#00FF88", wordBreak: "break-all" }}>{t.hash}</span>
+            </div>
+          ))}
+          {/* 无哈希但有 tradeLog 时降级展示 */}
+          {tradeHashLog.length === 0 && tradeLog.map((evt, i) => (
+            <div key={i} style={{ marginBottom: 3 }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#00BFFF" }}>{evt.ts} </span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#FF1493", fontWeight: 900 }}>{evt.action} </span>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#00FF88" }}>
+                #{String(evt.entity_id ?? 0).padStart(3, "0")} · {evt.status ?? ""}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
+      </Card>
 
-      {/* ── 24h 气温柱状图（精简版） ── */}
+      {/* ── 24h 气温柱状图（保留）── */}
       {hourly.length > 0 && (
-        <div style={{
-          border: "3px solid #1A1A1A",
-          boxShadow: "4px 4px 0 0 #1A1A1A",
-          background: "#C7B8EA",
-          flexShrink: 0,
-        }}>
-          <div style={{
-            borderBottom: "2px solid #1A1A1A",
-            padding: "5px 12px",
-            background: "#1A1A1A",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <span style={{ fontFamily: "'Courier New', monospace", fontWeight: 900, fontSize: 11, color: "#C7B8EA", letterSpacing: "0.1em" }}>
-              24H TEMP
-            </span>
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#888" }}>
-              {minTemp}°~{maxTemp}°C
-            </span>
-          </div>
-          <div style={{ padding: "8px 10px 6px" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 72 }}>
+        <Card title="24H TEMP" tag={`${minTemp}~${maxTemp}°C`} accent="#FFEE00" style={{ flexShrink: 0 }}>
+          <div style={{ padding: "8px 10px 6px", background: "#fff" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 60 }}>
               {hourly.map((t, i) => {
                 const pct = ((t - minTemp) / tempRange) * 100;
-                const barH = Math.max(pct * 0.65, 4);
+                const barH = Math.max(pct * 0.5, 3);
                 const hot = t > 32; const cold = t < 10;
                 return (
                   <motion.div
@@ -378,25 +293,21 @@ export default function AnalyticsDashboard({ riskData = null, region = "—" }) 
                     animate={{ height: barH }}
                     transition={{ duration: 0.4, delay: i * 0.015 }}
                     title={`${i}:00 — ${t}°C`}
-                    style={{
-                      flex: 1, height: barH,
-                      background: hot ? "#FF6B00" : cold ? "#9BF6FF" : "#FFE66D",
-                      border: "1.5px solid #1A1A1A", minWidth: 3,
-                    }}
+                    style={{ flex: 1, height: barH, background: hot ? "#FF6B00" : cold ? "#9BF6FF" : "#FFE66D", border: "1.5px solid #000", minWidth: 3 }}
                   />
                 );
               })}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
               {[0, 6, 12, 18, 23].map(h => (
-                <span key={h} style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#666", fontWeight: 700 }}>
+                <span key={h} style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: "#000", fontWeight: 700 }}>
                   {String(h).padStart(2, "0")}h
                 </span>
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
-    </motion.div>
+    </div>
   );
 }

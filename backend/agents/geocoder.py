@@ -1,5 +1,5 @@
-"""
-Geocoder Agent — Phase 3
+﻿"""
+Geocoder Agent - v3.0
 使用 OpenStreetMap Nominatim 将城市名称转换为经纬度
 免费、无需 API Key
 """
@@ -82,3 +82,4 @@ async def geocode(city: str) -> tuple[float, float, str]:
 
     # 最终兜底：深圳
     return 22.69, 114.39, city
+
