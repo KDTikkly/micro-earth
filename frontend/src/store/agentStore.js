@@ -11,6 +11,11 @@ export const useAgentStore = create((set) => ({
   entityData:   null,     // Phase 4: 实体列表 + stats
   tradeLog:     [],       // Phase 4: 交易事件滚动日志（最近50条）
   assetHistory: [],       // Phase 4: 全局均值资产历史曲线
+  heatmapData:  null,     // Phase 5: 超分辨率热力矩阵
+  whatIf: {               // Phase 5: What-If 干预参数
+    tempOffset:       0.0,
+    precipMultiplier: 1.0,
+  },
 
   appendLog:    (entry) => set((s) => ({ logs: [...s.logs, entry] })),
   setStatus:    (status) => set({ status }),
@@ -18,6 +23,8 @@ export const useAgentStore = create((set) => ({
   setCoords:    (lat, lon) => set({ lat, lon }),
   setGeoJson:   (data) => set({ geojsonData: data }),
   setRiskData:  (data) => set({ riskData: data }),
+  setHeatmap:   (data) => set({ heatmapData: data }),
+  setWhatIf:    (params) => set((s) => ({ whatIf: { ...s.whatIf, ...params } })),
   setEntityData: (data) => set((s) => {
     const newHistory = data?.stats?.avg_asset_value != null
       ? [...s.assetHistory, data.stats.avg_asset_value].slice(-60)
@@ -29,6 +36,6 @@ export const useAgentStore = create((set) => ({
   })),
   clearLogs: () => set({
     logs: [], status: "IDLE", geojsonData: null, riskData: null,
-    entityData: null, tradeLog: [], assetHistory: [],
+    entityData: null, tradeLog: [], assetHistory: [], heatmapData: null,
   }),
 }));

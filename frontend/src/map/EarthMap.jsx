@@ -1,10 +1,8 @@
 /**
- * EarthMap — Phase 4 Blueprint Neo-Brutalism
- * 新增：Kinetic Entities 多智能体实体渲染
- * - NORMAL: 蓝色空心细线三角形
- * - STRESSED: 黄色实心菱形（微幅脉冲）
- * - PANIC: 红色/粉色实心圆（闪烁动画）
- * 布朗运动由后端驱动，前端通过 Zustand 实时更新 Marker 位置
+ * EarthMap — Phase 5
+ * Phase 5 新增：
+ * - 超分辨率热力矩阵渲染（温度色阶网格）
+ * - 洪涝区半透明电光紫多边形覆盖层
  */
 import { useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
@@ -210,7 +208,93 @@ function EntityLayer() {
   return null;
 }
 
-// ── Memphis 角标装饰 ──────────────────────────────────────────
+// ── Phase 5: 超分辨率热力矩阵 + 洪涝区渲染 ─────────────────────────────────
+function HeatmapLayer() {
+  const heatmapData  = useAgentStore((s) => s.heatmapData);
+  const map          = useMap();
+  const gridLayerRef = useRef(null);
+  const floodLayerRef = useRef(null);
+
+  // 温度映射到颜色（蓝→青→绿→黄→红）
+  function tempToColor(t) {
+    if (t <= 5)  return "rgba(0,100,255,0.45)";
+    if (t <= 15) return "rgba(0,200,255,0.40)";
+    if (t <= 22) return "rgba(0,255,150,0.35)";
+    if (t <= 28) return "rgba(255,230,0,0.40)";
+    if (t <= 33) return "rgba(255,140,0,0.45)";
+    return "rgba(255,0,85,0.50)";
+  }
+
+  useEffect(() => {
+    // 清理旧图层
+    if (gridLayerRef.current) { map.removeLayer(gridLayerRef.current); gridLayerRef.current = null; }
+    if (floodLayerRef.current) { map.removeLayer(floodLayerRef.current); floodLayerRef.current = null; }
+
+    if (!heatmapData?.temp_matrix?.length) return;
+
+    const { temp_matrix, precip_matrix, flood_zones, bounds, resolution } = heatmapData;
+    const { min_lat, max_lat, min_lon, max_lon } = bounds;
+    const dLat = (max_lat - min_lat) / resolution;
+    const dLon = (max_lon - min_lon) / resolution;
+
+    // ① 温度热力网格
+    const gridGroup = L.layerGroup();
+    for (let row = 0; row < resolution; row++) {
+      for (let col = 0; col < resolution; col++) {
+        const t = temp_matrix[row]?.[col] ?? 20;
+        const cellLat1 = min_lat + row * dLat;
+        const cellLat2 = cellLat1 + dLat;
+        const cellLon1 = min_lon + col * dLon;
+        const cellLon2 = cellLon1 + dLon;
+        const color = tempToColor(t);
+
+        L.rectangle(
+          [[cellLat1, cellLon1], [cellLat2, cellLon2]],
+          {
+            color: "transparent",
+            fillColor: color.replace("rgba", "rgb").replace(/,[^,]+\)/, ")"),
+            fillOpacity: parseFloat(color.match(/,([\d.]+)\)$/)?.[1] ?? 0.4),
+            weight: 0,
+            interactive: false,
+          }
+        ).addTo(gridGroup);
+      }
+    }
+    gridLayerRef.current = gridGroup;
+    gridGroup.addTo(map);
+
+    // ② 洪涝区 — 半透明电光紫多边形
+    if (flood_zones?.length > 0) {
+      const floodGroup = L.layerGroup();
+      const halfDLat = dLat * 0.55;
+      const halfDLon = dLon * 0.55;
+
+      flood_zones.forEach(({ lat: fLat, lon: fLon, intensity }) => {
+        L.rectangle(
+          [[fLat - halfDLat, fLon - halfDLon], [fLat + halfDLat, fLon + halfDLon]],
+          {
+            color: "#6200EE",
+            weight: 2,
+            dashArray: "4 3",
+            fillColor: "#6200EE",
+            fillOpacity: Math.min(0.15 + (intensity - 80) / 100 * 0.35, 0.5),
+            interactive: false,
+          }
+        ).addTo(floodGroup);
+      });
+
+      floodLayerRef.current = floodGroup;
+      floodGroup.addTo(map);
+    }
+
+    return () => {
+      if (gridLayerRef.current) { map.removeLayer(gridLayerRef.current); gridLayerRef.current = null; }
+      if (floodLayerRef.current) { map.removeLayer(floodLayerRef.current); floodLayerRef.current = null; }
+    };
+  }, [heatmapData, map]);
+
+  return null;
+}
 function BlueprintCornerDecor() {
   return (
     <>
@@ -245,7 +329,7 @@ function BlueprintCornerDecor() {
 }
 
 export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 }) {
-  const { geojsonData, entityData, setGeoJson, appendLog, setStatus } = useAgentStore();
+  const { geojsonData, entityData, setGeoJson, appendLog, setStatus, setHeatmap, whatIf } = useAgentStore();
   const wsRef = useRef(null);
 
   const connect = useCallback(() => {
@@ -257,7 +341,11 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
 
     ws.onopen = () => {
       setStatus("RUNNING");
-      ws.send(JSON.stringify({ region, lat, lon }));
+      ws.send(JSON.stringify({
+        region, lat, lon,
+        temp_offset: whatIf?.tempOffset ?? 0.0,
+        precip_multiplier: whatIf?.precipMultiplier ?? 1.0,
+      }));
     };
 
     ws.onmessage = (e) => {
@@ -276,6 +364,13 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         if (data.event === "trade" && data.data) {
           useAgentStore.getState().appendTrade(data.data);
         }
+        // Phase 5: 接收超分辨率热力矩阵
+        if (data.event === "heatmap" && data.data) {
+          setHeatmap(data.data);
+        }
+        if (data.event === "risk" && data.data) {
+          useAgentStore.getState().setRiskData(data.data);
+        }
         if (data.event === "done")  setStatus("IDLE");
         if (data.event === "error") setStatus("ERROR");
       } catch { /* ignore */ }
@@ -287,7 +382,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     };
 
     ws.onclose = () => setStatus("IDLE");
-  }, [region, lat, lon, setGeoJson, appendLog, setStatus]);
+  }, [region, lat, lon, setGeoJson, appendLog, setStatus, setHeatmap, whatIf]);
 
   useEffect(() => {
     connect();
@@ -299,6 +394,8 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const panicCount    = stats?.panic_count ?? 0;
   const stressedCount = stats?.stressed_count ?? 0;
   const totalEntities = stats?.total_entities ?? 0;
+  const heatmapData   = useAgentStore((s) => s.heatmapData);
+  const floodCount    = heatmapData?.flood_zones?.length ?? 0;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -328,6 +425,9 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
 
         {/* Phase 4: 实体渲染层 */}
         <EntityLayer />
+
+        {/* Phase 5: 超分辨率热力矩阵 + 洪涝区 */}
+        <HeatmapLayer />
       </MapContainer>
 
       {/* 角标装饰 */}
@@ -371,6 +471,31 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
               ● {panicCount} PANIC
             </span>
           )}
+        </div>
+      )}
+
+      {/* Phase 5: 热力矩阵 + 洪涝区徽章 */}
+      {heatmapData && (
+        <div style={{
+          position: "absolute", top: 44, right: 8,
+          zIndex: 600, pointerEvents: "none",
+          display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end",
+        }}>
+          <span style={{
+            background: floodCount > 0 ? "#6200EE" : "#00FF00",
+            border: "2px solid #000", boxShadow: floodCount > 0 ? "0 0 8px #6200EE" : "0 0 6px #00FF00",
+            fontFamily: "'Courier New', monospace", fontSize: 10, fontWeight: 900,
+            padding: "2px 8px", color: "#fff",
+          }}>
+            {floodCount > 0 ? `◈ ${floodCount} FLOOD ZONES` : "✓ NO FLOOD RISK"}
+          </span>
+          <span style={{
+            background: "#000", border: "1.5px solid #FFEE00",
+            fontFamily: "'Courier New', monospace", fontSize: 9, fontWeight: 700,
+            padding: "1px 6px", color: "#FFEE00",
+          }}>
+            12×12 SR GRID
+          </span>
         </div>
       )}
 

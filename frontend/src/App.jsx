@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import BrutalistCard from "./components/BrutalistCard";
 import AgentTerminal from "./components/AgentTerminal";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
+import WhatIfSandbox from "./components/WhatIfSandbox";
 import { useAgentStore } from "./store/agentStore";
 import lyriaImg from "./assets/lyria-reverie.png";
 
@@ -177,7 +178,7 @@ export default function App() {
             letterSpacing: "0.06em", fontWeight: 700,
             border: "1.5px solid #FFEE00", padding: "1px 6px",
           }}>
-            v0.4.0 · PHASE 4
+            v0.5.0 · PHASE 5
           </span>
         </div>
 
@@ -285,6 +286,11 @@ export default function App() {
                 ))}
               </div>
             </div>
+          </motion.div>
+
+          {/* Phase 5: What-If 灾害沙盘 */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }}>
+            <WhatIfSandbox />
           </motion.div>
 
           {/* 气象快照 */}
@@ -412,7 +418,7 @@ export default function App() {
         height: 36, flexShrink: 0, padding: "0 16px",
       }}>
         <span style={{ color: "#FFEE00", fontWeight: 700 }}>MICRO-EARTH © 2026</span>
-        <span style={{ color: "#FF0055", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 4</span>
+        <span style={{ color: "#FF0055", fontWeight: 900, letterSpacing: "0.08em" }}>CYBER-LAB MEMPHIS · PHASE 5</span>
         <span style={{ color: geojsonData ? "#00FF00" : "#333", fontWeight: 700 }}>
           {geojsonData ? `✓ open-meteo.com` : "// NO DATA"}
         </span>
