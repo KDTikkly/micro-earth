@@ -6,6 +6,10 @@
   "author": "Lyria A.I. Research Lab",
   "license": "MIT",
   "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KDTikkly/micro-earth.git"
+  },
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
@@ -19,6 +23,7 @@
     "png-to-ico": "^3.0.1"
   },
   "build": {
+    "publish": "never",
     "appId": "ai.lyria.micro-earth",
     "productName": "Micro-Earth-Digital-Twin",
     "copyright": "Copyright © 2026 Lyria A.I. Research Lab",
