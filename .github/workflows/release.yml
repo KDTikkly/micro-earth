@@ -110,6 +110,10 @@ jobs:
         run: |
           TAG=${{ github.ref_name }}
           VERSION=${TAG#v}
+          # 补全为三段式版本号：11.2 -> 11.2.0
+          DOTS=$(echo "$VERSION" | tr -cd '.' | wc -c)
+          if [ "$DOTS" -lt 2 ]; then VERSION="${VERSION}.0"; fi
+          if [ "$DOTS" -lt 1 ]; then VERSION="${VERSION}.0"; fi
           npm version $VERSION --no-git-tag-version --allow-same-version
 
       - name: Publish to GitHub Packages
