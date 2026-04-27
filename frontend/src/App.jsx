@@ -165,20 +165,20 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, overflow: "hidden", minWidth: 0 }}>
           {/* 头像 + 标题区 */}
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               {/* 头像 */}
               <div style={{
                 position: "relative", flexShrink: 0,
-                width: 80, height: 80,
-                border: "2px solid #1A1A1A", boxShadow: "3px 3px 0 0 #1A1A1A",
+                width: 120, height: 150,
+                border: "2.5px solid #1A1A1A", boxShadow: "4px 4px 0 0 #1A1A1A",
                 overflow: "hidden", background: "#e8f4fc",
               }}>
-                <img src={lyriaImg} alt="LYRIA" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 10%" }} />
+                <img src={lyriaImg} alt="LYRIA" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 8%" }} />
                 <div style={{
                   position: "absolute", bottom: 0, left: 0, right: 0,
-                  background: "rgba(255,230,109,0.92)", borderTop: "1px solid #1A1A1A",
-                  padding: "2px 4px", fontFamily: "'Courier New', monospace",
-                  fontSize: 8, fontWeight: 900, letterSpacing: "0.06em", color: "#1A1A1A",
+                  background: "rgba(255,230,109,0.92)", borderTop: "1.5px solid #1A1A1A",
+                  padding: "3px 6px", fontFamily: "'Courier New', monospace",
+                  fontSize: 11, fontWeight: 900, letterSpacing: "0.06em", color: "#1A1A1A",
                   textAlign: "center",
                 }}>LYRIA · A.I.</div>
               </div>
