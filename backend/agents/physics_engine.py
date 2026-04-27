@@ -1,10 +1,135 @@
 """
-PhysicsEngine Agent — Phase 3
+PhysicsEngine Agent — Phase 5
 极端天气风险指数推演（Extreme Weather Risk Index, 0~100）
-公式整合温度、降水概率、风速等多维度指标
++ 超分辨率空间插值（Bilinear Interpolation 25km→1km 模拟）
++ What-If 环境干预（temp_offset / precip_multiplier）
 """
 # -*- coding: utf-8 -*-
 import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+import math
+
+
+# ── 超分辨率空间插值 ────────────────────────────────────────────────────────────
+def super_resolve_grid(features: list, center_lat: float, center_lon: float,
+                       resolution: int = 12,
+                       temp_offset: float = 0.0,
+                       precip_multiplier: float = 1.0) -> dict:
+    """
+    Phase 5: 超分辨率空间插值
+    将稀疏的观测节点（~25km 间距）通过反距离权重插值（IDW）上采样为
+    resolution×resolution 的高分辨率矩阵（模拟 1km 精度）。
+
+    Args:
+        features: GeoJSON features 列表
+        center_lat/center_lon: 城市中心坐标
+        resolution: 输出网格边长（默认 12×12 = 144 格）
+        temp_offset: What-If — 全局温度偏移（°C）
+        precip_multiplier: What-If — 降水概率倍率
+
+    Returns:
+        {
+          "temp_matrix": [[float]],    # resolution×resolution 温度矩阵
+          "precip_matrix": [[float]],  # resolution×resolution 降水概率矩阵
+          "flood_zones": [{"lat":..., "lon":..., "radius":...}],  # 潜在洪涝区
+          "bounds": {"min_lat", "max_lat", "min_lon", "max_lon"},
+          "resolution": int,
+          "temp_offset": float,
+          "precip_multiplier": float,
+        }
+    """
+    if not features:
+        return {
+            "temp_matrix": [],
+            "precip_matrix": [],
+            "flood_zones": [],
+            "bounds": {},
+            "resolution": resolution,
+            "temp_offset": temp_offset,
+            "precip_multiplier": precip_multiplier,
+        }
+
+    # 提取观测点的坐标和数值
+    obs = []
+    for feat in features:
+        coords = feat.get("geometry", {}).get("coordinates", [])
+        props  = feat.get("properties", {})
+        if len(coords) >= 2:
+            flon, flat = coords[0], coords[1]
+        else:
+            flat, flon = center_lat, center_lon
+        T = (props.get("temperature_2m") or props.get("avg_temperature_24h") or 20.0) + temp_offset
+        P = min((props.get("precipitation_probability") or props.get("avg_precipitation_24h") or 0.0) * precip_multiplier, 100.0)
+        obs.append({"lat": flat, "lon": flon, "T": T, "P": P})
+
+    if not obs:
+        return {
+            "temp_matrix": [],
+            "precip_matrix": [],
+            "flood_zones": [],
+            "bounds": {},
+            "resolution": resolution,
+            "temp_offset": temp_offset,
+            "precip_multiplier": precip_multiplier,
+        }
+
+    # 确定网格范围（以中心为基准，±1.5度）
+    span = 1.5
+    min_lat = center_lat - span
+    max_lat = center_lat + span
+    min_lon = center_lon - span
+    max_lon = center_lon + span
+
+    temp_matrix   = []
+    precip_matrix = []
+    flood_zones   = []
+
+    for row in range(resolution):
+        temp_row   = []
+        precip_row = []
+        grid_lat = min_lat + (max_lat - min_lat) * (row + 0.5) / resolution
+
+        for col in range(resolution):
+            grid_lon = min_lon + (max_lon - min_lon) * (col + 0.5) / resolution
+
+            # IDW 插值（power=2）
+            weights = []
+            for o in obs:
+                d = math.sqrt((o["lat"] - grid_lat) ** 2 + (o["lon"] - grid_lon) ** 2)
+                d = max(d, 1e-6)
+                weights.append(1.0 / (d ** 2))
+
+            total_w  = sum(weights)
+            interp_T = sum(w * o["T"] for w, o in zip(weights, obs)) / total_w
+            interp_P = sum(w * o["P"] for w, o in zip(weights, obs)) / total_w
+
+            temp_row.append(round(interp_T, 2))
+            precip_row.append(round(min(interp_P, 100.0), 2))
+
+            # 洪涝区检测：降水概率 >= 80%
+            if interp_P >= 80.0:
+                flood_zones.append({
+                    "lat": round(grid_lat, 4),
+                    "lon": round(grid_lon, 4),
+                    "intensity": round(interp_P, 1),
+                })
+
+        temp_matrix.append(temp_row)
+        precip_matrix.append(precip_row)
+
+    return {
+        "temp_matrix":        temp_matrix,
+        "precip_matrix":      precip_matrix,
+        "flood_zones":        flood_zones,
+        "bounds": {
+            "min_lat": round(min_lat, 4),
+            "max_lat": round(max_lat, 4),
+            "min_lon": round(min_lon, 4),
+            "max_lon": round(max_lon, 4),
+        },
+        "resolution":         resolution,
+        "temp_offset":        temp_offset,
+        "precip_multiplier":  precip_multiplier,
+    }
 
 
 def compute_indices(raw: dict) -> dict:
