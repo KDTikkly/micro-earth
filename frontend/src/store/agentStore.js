@@ -54,7 +54,7 @@ export const useAgentStore = create((set) => ({
       ? [...s.ammPriceHistory, { t: evt.ts, price: evt.amm_price, k: evt.amm_k ?? null }].slice(-60)
       : s.ammPriceHistory;
     const hashEntry = evt.tx_hash
-      ? [{ ts: evt.ts, hash: evt.tx_hash, action: evt.action, entity_id: evt.entity_id }, ...s.tradeHashLog].slice(0, 50)
+      ? [{ ts: evt.ts, hash: evt.tx_hash, action: evt.action, entity_id: evt.entity_id, chain_mode: evt.chain_mode ?? false }, ...s.tradeHashLog].slice(0, 50)
       : s.tradeHashLog;
     return {
       tradeLog: [evt, ...s.tradeLog].slice(0, 50),

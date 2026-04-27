@@ -1,12 +1,11 @@
 ﻿"""
-EntitySimulator Agent - v8.0
-多智能体自主疏散 + Cosmolyra AMM 经济层 (Cosmolyra Ecosystem & Layer 2 Settlement)
+EntitySimulator Agent - v9.0
+多智能体自主疏散 + Web3/Hardhat 链上 AMM 结算
 
-v8.0 新增：
-  - AMM 恒定乘积公式 x*y=k
-  - 灾害触发实体自主抛售 -> AMM Swap -> 价格剧烈波动
-  - 每次 Swap 生成伪交易哈希（tx_hash）
-  - trade_events 携带 amm_price / amm_k / tx_hash 字段
+v9.0 新增：
+  - 通过 chain_amm 适配层调用 DynamicAssetAMM.panicSell() on-chain
+  - 自动降级：Hardhat 不可用时回退到内置 x*y=k 模拟 AMM
+  - trade_events 携带 chain_mode 字段标识是否为真实链上 tx
 """
 # -*- coding: utf-8 -*-
 import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -16,6 +15,19 @@ import math
 import time
 import hashlib
 from typing import List, Dict
+
+# 延迟导入 chain_amm 避免启动时因 web3 未安装导致崩溃
+_chain_amm = None
+
+def _get_chain_amm():
+    global _chain_amm
+    if _chain_amm is None:
+        try:
+            import agents.chain_amm as _mod
+            _chain_amm = _mod
+        except Exception:
+            pass
+    return _chain_amm
 
 # -- 灾害感知阈值 --------------------------------------------------------------
 EVACUATION_RISK_THRESHOLD = 60   # 风险指数 >= 此值触发疏散
@@ -220,30 +232,48 @@ def simulate_entities(
         )
         evac_logs.append(evac_log)
 
+        cam = _get_chain_amm()
         for eid in newly_evacuating[:10]:
-            # AMM swap：每实体抛售约 0.3~0.8 个 DynAsset
+            # AMM swap: 每实体抛售约 0.3~0.8 个 DynAsset
             sell_amount = round(random.uniform(0.3, 0.8), 4)
-            stable_recv = amm_swap_asset_for_stable(sell_amount)
-            cur_price   = amm_price()
-            tx_hash     = _make_tx_hash(eid, ts, cur_price)
+
+            # v9.0: 优先调用链上 AMM，不可用时 fallback 到内置模拟
+            if cam is not None:
+                try:
+                    result    = cam.swap_panic_sell(eid, sell_amount)
+                    cur_price = result["amm_price"]
+                    stable_recv = result["stable_out"]
+                    tx_hash   = result["tx_hash"]
+                    chain_mode = result.get("chain_mode", False)
+                except Exception:
+                    stable_recv = amm_swap_asset_for_stable(sell_amount)
+                    cur_price   = amm_price()
+                    tx_hash     = _make_tx_hash(eid, ts, cur_price)
+                    chain_mode  = False
+            else:
+                stable_recv = amm_swap_asset_for_stable(sell_amount)
+                cur_price   = amm_price()
+                tx_hash     = _make_tx_hash(eid, ts, cur_price)
+                chain_mode  = False
 
             trade_events.append({
                 "ts":           ts,
                 "entity_id":    eid,
                 "action":       "EMERGENCY_EVACUATE",
                 "status":       "EVACUATING",
-                "asset_value":  round(cur_price * 10, 2),   # 估值 = price * 10 个单位
+                "asset_value":  round(cur_price * 10, 2),
                 "depreciation_pct": round((1 - cur_price / (AMM_INITIAL_STABLE / AMM_INITIAL_ASSET)) * 100, 2),
-                # v8.0 AMM 字段
                 "amm_price":    round(cur_price, 4),
                 "amm_k":        round(_amm_k, 4),
                 "amm_sell":     sell_amount,
                 "amm_recv":     round(stable_recv, 4),
                 "tx_hash":      tx_hash,
+                "chain_mode":   chain_mode,
             })
+            mode_tag = "[ON-CHAIN]" if chain_mode else "[SIMULATED]"
             amm_log = (
-                f"[{ts}] [AMM] Entity #{eid:03d} SWAP {sell_amount} DynAsset -> {stable_recv:.2f} Stable | "
-                f"Price: {cur_price:.2f} | TxHash: {tx_hash[:18]}..."
+                f"[{ts}] [AMM] {mode_tag} Entity #{eid:03d} SWAP {sell_amount} DYNA -> {stable_recv:.2f} MUSD | "
+                f"Price: {cur_price:.2f} | TxHash: {tx_hash[:20]}..."
             )
             evac_logs.append(amm_log)
 

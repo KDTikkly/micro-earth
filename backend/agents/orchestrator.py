@@ -54,6 +54,14 @@ from agents.geocoder import geocode
 from agents.entity_simulator import generate_entities, simulate_entities
 from agents.llm_adapter import analyze_weather, parse_city_intent, get_backend_info
 
+# v9.0: 链上 AMM 适配层（延迟探测）
+try:
+    from agents.chain_amm import probe as _amm_probe
+    _print("[ChainAMM] Probing Hardhat node...")
+    _print(_amm_probe())
+except Exception as _e:
+    _print(f"[ChainAMM] Load skipped: {_e}")
+
 
 # -- 状态定义 ----------------------------------------------------------------
 class AgentState(TypedDict):
