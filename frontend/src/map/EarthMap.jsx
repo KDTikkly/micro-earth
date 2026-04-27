@@ -6,7 +6,8 @@
  *
  * 功能：
  * - Globe 球形投影（圆形地球 + 太空背景）
- * - Esri 卫星底图（免费无 Token）
+ * - 卫星底图：谷歌卫星（首选）/ 高德卫星（降级备用）
+ * - 自动检测谷歌瓦片可访问性，不可用时自动切换高德
  * - 国家/省级行政区边界开关
  * - 风场粒子 Canvas 叠加
  * - 实体疏散 Canvas 叠加
@@ -16,6 +17,108 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useAgentStore } from "../store/agentStore";
 import { WS_BASE } from "../utils/wsConfig";
+
+/* ── 瓦片源配置 ──────────────────────────────────────────── */
+const TILE_SOURCES = {
+  google: {
+    label: "谷歌卫星",
+    labelEn: "Google",
+    // Google 卫星瓦片（lyrs=s 仅卫星图，lyrs=y 含标注）
+    sat: [
+      "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+      "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+      "https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+      "https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+    ],
+    labels: null,                       // Google 卫星瓦片已内嵌标注可选
+    attribution: "© Google Maps",
+    // 用于连通性检测的探针瓦片（z=1 x=1 y=0 全球覆盖）
+    probe: "https://mt1.google.com/vt/lyrs=s&x=1&y=0&z=1",
+  },
+  amap: {
+    label: "高德卫星",
+    labelEn: "AMap",
+    sat: [
+      "https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+      "https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+      "https://webst03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+      "https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+    ],
+    labels: [
+      "https://webst01.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
+      "https://webst02.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
+    ],
+    attribution: "© 高德地图 · AutoNavi",
+    probe: "https://webst01.is.autonavi.com/appmaptile?style=6&x=109&y=54&z=7",
+  },
+};
+
+/**
+ * 探测指定瓦片源是否可访问（HEAD 请求，3s 超时）
+ * @param {"google"|"amap"} key
+ * @returns {Promise<boolean>}
+ */
+async function probeTileSource(key) {
+  const { probe } = TILE_SOURCES[key];
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const resp = await fetch(probe, { method: "HEAD", mode: "no-cors", signal: ctrl.signal });
+    clearTimeout(timer);
+    // no-cors 模式下 resp.type === "opaque"，status === 0，但不抛异常即视为可达
+    return resp.type === "opaque" || resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 构建 MapLibre style 的 sources + layers 对象
+ */
+function buildMapStyle(sourceKey) {
+  const src = TILE_SOURCES[sourceKey];
+  const sources = {
+    "sat-tiles": {
+      type: "raster",
+      tiles: src.sat,
+      tileSize: 256,
+      attribution: src.attribution,
+      maxzoom: 20,
+    },
+  };
+  const layers = [
+    {
+      id: "sat-layer",
+      type: "raster",
+      source: "sat-tiles",
+      minzoom: 0,
+      maxzoom: 21,
+      paint: {
+        "raster-resampling":     "linear",
+        "raster-saturation":     0.12,
+        "raster-contrast":       0.08,
+        "raster-brightness-min": 0.04,
+      },
+    },
+  ];
+  if (src.labels) {
+    sources["label-tiles"] = {
+      type: "raster",
+      tiles: src.labels,
+      tileSize: 256,
+      maxzoom: 18,
+    };
+    layers.push({
+      id: "label-layer",
+      type: "raster",
+      source: "label-tiles",
+      minzoom: 4,
+      maxzoom: 19,
+      paint: { "raster-opacity": 0.7 },
+    });
+  }
+  return { sources, layers };
+}
 
 /* ── 城市坐标 ─────────────────────────────────────────────── */
 const CITY_COORDS = {
@@ -401,6 +504,24 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
   const [dimensions, setDimensions] = useState({ w: 800, h: 600 });
   const [showCountries, setShowCountries] = useState(true);
   const [showProvinces, setShowProvinces] = useState(false);
+  // 瓦片源：null=自动探测中 | "google" | "amap"
+  const [tileSource, setTileSource]     = useState(null);
+  const [tileProbing, setTileProbing]   = useState(true);   // 正在探测
+
+  /* ── 自动探测瓦片可访问性（首选谷歌，降级高德）────── */
+  useEffect(() => {
+    let cancelled = false;
+    async function autoDetect() {
+      setTileProbing(true);
+      const googleOk = await probeTileSource("google");
+      if (cancelled) return;
+      const chosen = googleOk ? "google" : "amap";
+      setTileSource(chosen);
+      setTileProbing(false);
+    }
+    autoDetect();
+    return () => { cancelled = true; };
+  }, []);
 
   /* ── 客户端挂载防护：确保 DOM 完全就绪后再初始化 WebGL ── */
   useEffect(() => {
@@ -420,69 +541,26 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
     return () => ro.disconnect();
   }, [isMounted]);
 
-  /* ── 初始化 MapLibre GL 实例 ────────────────────────── */
+  /* ── 初始化 MapLibre GL 实例（等待瓦片探测完成后再挂载）── */
   useEffect(() => {
     if (!isMounted || !containerRef.current || mapRef.current) return;
+    // 若探测还未完成，等 tileSource 有值后再初始化
+    if (!tileSource) return;
 
     const center = CITY_COORDS[region] ?? [lon, lat];
+    const { sources: tileSources, layers: tileLayers } = buildMapStyle(tileSource);
 
     const map = new maplibregl.Map({
       container:  containerRef.current,
       style: {
         version: 8,
-        sources: {
-          // 高德卫星瓦片（国内可访问，高清卫星图）
-          "amap-sat": {
-            type:  "raster",
-            tiles: [
-              "https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-              "https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-              "https://webst03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-              "https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            ],
-            tileSize:    256,
-            attribution: "© 高德地图 · AutoNavi",
-            maxzoom:     18,
-          },
-          // 高德路网/标注叠加层
-          "amap-labels": {
-            type:  "raster",
-            tiles: [
-              "https://webst01.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
-              "https://webst02.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}",
-            ],
-            tileSize: 256,
-            maxzoom:  18,
-          },
-        },
-        layers: [
-          {
-            id:      "amap-sat-layer",
-            type:    "raster",
-            source:  "amap-sat",
-            minzoom: 0,
-            maxzoom: 19,
-            paint: {
-              "raster-resampling":     "linear",
-              "raster-saturation":     0.15,
-              "raster-contrast":       0.1,
-              "raster-brightness-min": 0.05,
-            },
-          },
-          {
-            id:      "amap-labels-layer",
-            type:    "raster",
-            source:  "amap-labels",
-            minzoom: 4,
-            maxzoom: 19,
-            paint: { "raster-opacity": 0.7 },
-          },
-        ],
+        sources: tileSources,
+        layers:  tileLayers,
         glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
       },
       center,
       zoom:       2.5,
-      projection: { type: "globe" },   // MapLibre v4+ Globe 投影对象语法
+      projection: { type: "globe" },
       attributionControl: false,
       logoPosition: "bottom-right",
     });
@@ -537,7 +615,7 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         paint: {
           "line-color":     "#FF00FF",
           "line-width":     0.5,
-          "line-opacity":   0,               // 默认隐藏
+          "line-opacity":   0,
           "line-dasharray": [4, 2],
         },
       });
@@ -550,8 +628,63 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
       map.remove();
       mapRef.current = null;
     };
-    // isMounted 变化时触发（等待 DOM 就绪后再初始化 WebGL）
-  }, [isMounted]);
+    // tileSource 确定后才真正初始化；isMounted 是 DOM 就绪信号
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, tileSource]);
+
+  /* ── 切换瓦片源（热切换，不重建 Map 实例）────────── */
+  const handleTileSwitch = useCallback(async (targetKey) => {
+    const map = mapRef.current;
+    if (!map || tileSource === targetKey) return;
+
+    // 先探测目标源是否可达
+    const ok = await probeTileSource(targetKey);
+    if (!ok) {
+      console.warn(`[EarthMap] ${targetKey} tile probe failed, keeping ${tileSource}`);
+      return;
+    }
+
+    const src = TILE_SOURCES[targetKey];
+    // 1. 移除旧 label 层（amap 有，google 无）
+    if (map.getLayer("label-layer"))  map.removeLayer("label-layer");
+    if (map.getSource("label-tiles")) map.removeSource("label-tiles");
+    // 2. 替换卫星瓦片源
+    if (map.getLayer("sat-layer"))    map.removeLayer("sat-layer");
+    if (map.getSource("sat-tiles"))   map.removeSource("sat-tiles");
+
+    map.addSource("sat-tiles", {
+      type: "raster",
+      tiles: src.sat,
+      tileSize: 256,
+      attribution: src.attribution,
+      maxzoom: 20,
+    });
+    // 找到 sky 层之前插入，保证叠层顺序
+    const beforeLayer = map.getLayer("sky") ? "sky" : undefined;
+    map.addLayer({
+      id: "sat-layer", type: "raster", source: "sat-tiles",
+      minzoom: 0, maxzoom: 21,
+      paint: {
+        "raster-resampling": "linear",
+        "raster-saturation": 0.12,
+        "raster-contrast":   0.08,
+        "raster-brightness-min": 0.04,
+      },
+    }, beforeLayer);
+
+    if (src.labels) {
+      map.addSource("label-tiles", {
+        type: "raster", tiles: src.labels, tileSize: 256, maxzoom: 18,
+      });
+      map.addLayer({
+        id: "label-layer", type: "raster", source: "label-tiles",
+        minzoom: 4, maxzoom: 19,
+        paint: { "raster-opacity": 0.7 },
+      }, beforeLayer);
+    }
+
+    setTileSource(targetKey);
+  }, [tileSource]);
 
   /* ── 区域切换飞行动画 ───────────────────────────────── */
   useEffect(() => {
@@ -685,6 +818,68 @@ export default function EarthMap({ region = "深圳", lat = 22.69, lon = 114.39 
         showProvinces={showProvinces}
         onToggle={handleBoundaryToggle}
       />
+
+      {/* 地图源切换面板 zIndex:700 */}
+      <div style={{
+        position:"absolute", top:8, left:8, zIndex:700,
+        display:"flex", flexDirection:"column", gap:4,
+      }}>
+        {/* 探测状态提示 */}
+        {tileProbing && (
+          <div style={{
+            background:"#1a1a2e", border:"1.5px solid #6200EE",
+            padding:"3px 10px", fontFamily:"'Courier New',monospace",
+            fontSize:10, fontWeight:700, color:"#BB86FC",
+            boxShadow:"0 0 6px #6200EE55",
+          }}>
+            [~] DETECTING MAP SOURCE...
+          </div>
+        )}
+        {/* 切换按钮组 */}
+        {!tileProbing && (
+          <div style={{ display:"flex", gap:3 }}>
+            {["google","amap"].map(key => {
+              const active = tileSource === key;
+              const cfg    = TILE_SOURCES[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleTileSwitch(key)}
+                  title={active ? `当前使用 ${cfg.label}` : `切换到 ${cfg.label}`}
+                  style={{
+                    position:"relative",
+                    background: active ? (key === "google" ? "#4285F4" : "#FF6900") : "#111",
+                    border:`2px solid ${active ? "#fff" : "#555"}`,
+                    color: active ? "#fff" : "#888",
+                    fontFamily:"'Courier New',monospace",
+                    fontSize:10, fontWeight:900, letterSpacing:"0.5px",
+                    padding:"3px 9px", cursor: active ? "default" : "pointer",
+                    boxShadow: active ? `0 0 10px ${key === "google" ? "#4285F488" : "#FF690088"}` : "none",
+                    transition:"all 0.15s",
+                    opacity: active ? 1 : 0.7,
+                  }}
+                >
+                  {key === "google" ? "◉ Google" : "◉ 高德"}
+                  {active && (
+                    <span style={{ marginLeft:4, fontSize:8, color:"#0f0" }}>▲</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {/* 当前源标注 */}
+        {tileSource && !tileProbing && (
+          <div style={{
+            fontFamily:"'Courier New',monospace", fontSize:9, color:"#666",
+            padding:"1px 2px",
+          }}>
+            {tileSource === "google"
+              ? "[AUTO] Google preferred · AMap fallback"
+              : "[FALLBACK] AMap (Google unreachable)"}
+          </div>
+        )}
+      </div>
 
       {/* 角标装饰 */}
       <CornerDecor />

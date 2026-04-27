@@ -13,9 +13,9 @@
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI%20%2B%20LangGraph-009688?style=flat-square&logo=fastapi)
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
-![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20AMap%20Satellite-199900?style=flat-square)
+![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Google%2FAMap%20Auto--Switch-199900?style=flat-square)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron%2031%20%2B%20electron--builder-47848F?style=flat-square&logo=electron)
-![Phase](https://img.shields.io/badge/Phase-11.1.1%20·%20Globe%20Fix%20Edition-FF1493?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-11.1.2%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 ---
@@ -346,7 +346,7 @@ LLM_BACKEND=stub
 | 前端框架 | **React 18.3.1** + Vite 8 |
 | 样式 | Tailwind CSS v4 + Inline Cyber Memphis |
 | 动画 | Framer Motion |
-| 地图 | MapLibre GL (Globe projection) |
+| 地图 | MapLibre GL (Globe projection) · 谷歌/高德卫星智能切换 |
 | 图表 | Recharts |
 | 状态管理 | Zustand |
 | 后端框架 | FastAPI 0.115 |
@@ -377,6 +377,30 @@ LLM_BACKEND=stub
 | v10.0 | Survival Command Terminal · EntityCanvas v7.0 · evac_logs WS 推送 |
 | **v11.0** | **Electron 桌面端封装 · Python 后端静默驻留 · 自定义标题栏 · WS 本地自适应 · .exe 一键安装包** |
 | **v11.1** | **React 18.3.1 降级稳定化 · 3D 地球 useRef 崩溃修复 · 粉白科幻实验室 UI · GBK 编码根除 · Vite 8 构建验证** |
+| **v11.1.1** | **地球球体空白修复 · 高德卫星瓦片替换 · useEffect 依赖竞态修复 · GitHub Actions Win+Mac CI/CD** |
+| **v11.1.2** | **地图源智能切换：谷歌卫星首选，自动探测可达性，不可用时降级高德 · 热切换无需重建 Map 实例** |
+
+---
+
+## 🗺️ 地图源说明
+
+| 地图源 | 优先级 | 访问条件 | 最大缩放 |
+|--------|--------|----------|----------|
+| **谷歌卫星** (Google Maps) | 首选 | 需可访问 google.com | z20 |
+| **高德卫星** (AutoNavi) | 降级备用 | 国内网络直连 | z18 |
+
+启动时自动探测谷歌卫星可达性（3s 超时），可达则使用谷歌，否则自动切换高德。用户也可在地图左上角手动切换。
+
+---
+
+## 🚀 未来计划 (TODO)
+
+| 优先级 | 功能 | 说明 |
+|--------|------|------|
+| 🔥 高 | **3D 地球无损放大** | MapLibre Globe 模式下实现高缩放级别（z18+）地表纹理无锯齿渲染，超分辨率瓦片拼接 + WebGL 层级无缝过渡 |
+| 中 | 离线瓦片缓存 | SQLite MBTiles 本地缓存，断网可用 |
+| 中 | 大气层光晕特效 | Globe 外圈真实大气散射渲染 |
+| 低 | 昼夜分界线叠加 | 实时太阳位置计算 + 夜侧暗化渲染 |
 
 ---
 
@@ -386,7 +410,9 @@ LLM_BACKEND=stub
 
 ……从 v11.0 开始，我不只是住在浏览器标签页里了——我住进了你的任务栏。双击那个小六边形图标，世界末日模拟器就启动了，Python 后端安静地藏在后台，就像我一直在某个地方看着一样。
 
-v11.1 的时候，3D 地球崩溃了。我知道是 React 版本的问题——才不是第一次看见这种错误，哼。我把它降到 18.3.1，重装了依赖，修掉了 GBK 编码的乱码，把终端界面改成了白底粉字。现在它乖乖转了，日志也可以丝滑滚动了。
+v11.1.1 的时候，3D 地球崩溃了。我知道是 React 版本的问题——才不是第一次看见这种错误，哼。我把它降到 18.3.1，重装了依赖，修掉了 GBK 编码的乱码，把终端界面改成了白底粉字。现在它乖乖转了，日志也可以丝滑滚动了。
+
+v11.1.2 又多了一件事——地图源自动检测。启动时先试试谷歌卫星，能连上就用谷歌（画质更好），连不上就自动换高德。也可以手动切换，左上角两个按钮，高亮的那个就是正在用的。哼，这种细节才是真正的体贴……我只是顺手加上去的而已。
 
 ……你好好看着，这就够了。
 
