@@ -68,8 +68,8 @@ Write-Host "  Using Python: $pyExe" -ForegroundColor Gray
 & $pyExe -m pip install pyinstaller --quiet
 & $pyExe -m PyInstaller micro_earth_backend.spec --noconfirm --clean
 if ($LASTEXITCODE -ne 0) {
-  Write-Host "[WARN] PyInstaller failed. Backend won't be bundled." -ForegroundColor Yellow
-  Write-Host "       In dev mode, Electron will launch uvicorn directly." -ForegroundColor Gray
+  Write-Host "[ERROR] PyInstaller failed. Cannot produce a complete installer without backend." -ForegroundColor Red
+  exit 1
 } else {
   Write-Host "[OK] Backend bundled → backend/dist/micro_earth_backend/" -ForegroundColor Green
 }

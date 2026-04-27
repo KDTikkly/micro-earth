@@ -4,8 +4,11 @@ Geocoder Agent - v3.0
 免费、无需 API Key
 """
 # -*- coding: utf-8 -*-
+import logging
 import os as _os; _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 import httpx
+
+logger = logging.getLogger(__name__)
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
@@ -71,8 +74,8 @@ async def geocode(city: str) -> tuple[float, float, str]:
             _CACHE[key] = (lat, lon, name)
             return lat, lon, name
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[Geocoder] Nominatim lookup failed for '%s': %s", city, e)
 
     # Fallback 表
     if key in _FALLBACK:

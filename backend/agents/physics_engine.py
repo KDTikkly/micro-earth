@@ -161,7 +161,7 @@ def compute_wind_vector_field(features: list, center_lat: float, center_lon: flo
     # 收集所有带 72h 时序的 features
     valid_features = [
         f for f in features
-        if f.get("properties", {}).get("wind_uv_72h")
+        if (f.get("properties") or {}).get("wind_uv_72h")
     ]
     if not valid_features:
         return {"times": [], "center": [center_lon, center_lat], "hourly_vectors": [], "bounds": {}}
@@ -225,7 +225,7 @@ def compute_indices(raw: dict) -> dict:
     """基础热力学指数（v1.0）"""
     T = raw.get("temperature", 20.0)
     H = raw.get("humidity", 60.0)
-    W = raw.get("wind_speed", 10.0)
+    W = max(raw.get("wind_speed", 10.0), 0.0)
 
     heat_index = T + 0.33 * (H / 100 * 6.105 * (17.27 * T / (237.7 + T))) - 0.70 * W - 4.0
     wind_chill = 13.12 + 0.6215 * T - 11.37 * (W ** 0.16) + 0.3965 * T * (W ** 0.16)

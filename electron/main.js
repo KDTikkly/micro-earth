@@ -22,7 +22,7 @@ function waitForPort(port, retries = 40, delay = 500) {
   return new Promise((resolve, reject) => {
     const attempt = (n) => {
       const req = http.get(`http://127.0.0.1:${port}/health`, (res) => {
-        if (res.statusCode < 500) resolve();
+        if (res.statusCode === 200) resolve();
         else attempt(n - 1);
       });
       req.on('error', () => {
@@ -81,7 +81,8 @@ function startBackend() {
 
   pyProcess.stdout.on('data', (d) => console.log('[Backend]', d.toString().trim()));
   pyProcess.stderr.on('data', (d) => console.error('[Backend]', d.toString().trim()));
-  pyProcess.on('exit', (code) => console.log('[Backend] exited with code', code));
+  pyProcess.on('error', (err) => console.error('[Backend] spawn error:', err.message));
+  pyProcess.on('exit', (code) => { console.log('[Backend] exited with code', code); pyProcess = null; });
 }
 
 // ── 杀掉 Python 进程（含子进程树） ───────────────────────────────
@@ -115,7 +116,7 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration:        false,   // 安全：不允许 renderer 直接用 Node API
       contextIsolation:       true,    // 安全：隔离主/渲染进程上下文
-      webSecurity:            false,   // 允许跨域加载 Mapbox/Esri 瓦片
+      webSecurity:            false,   // desktop app needs cross-origin tile/font/API access
       allowRunningInsecureContent: false,
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -139,10 +140,9 @@ async function createWindow() {
   if (IS_DEV) {
     // 开发模式：加载 Vite dev-server
     await win.loadURL(`http://127.0.0.1:${FRONTEND_PORT}`);
-    win.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // 打包模式：加载 Vite build 产物
-    const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+    // 打包模式：加载 Vite build 产物（electron-builder 将 ../frontend/dist 打入 asar 根）
+    const indexPath = path.join(__dirname, 'frontend', 'dist', 'index.html');
     await win.loadFile(indexPath);
   }
 
@@ -160,8 +160,18 @@ ipcMain.on('title-bar:close',    (e) => BrowserWindow.fromWebContents(e.sender)?
 
 // ── App 生命周期 ──────────────────────────────────────────────────
 app.whenReady().then(async () => {
-  // 1. 先启动 Python 后端
-  startBackend();
+  // 1. 启动 Python 后端（dev 模式下先检测端口是否已被外部脚本占用）
+  let backendAlreadyUp = false;
+  if (IS_DEV) {
+    try {
+      await waitForPort(BACKEND_PORT, /* retries */ 1, /* delay */ 200);
+      backendAlreadyUp = true;
+      console.log('[Electron] Backend already running on port', BACKEND_PORT, '(external)');
+    } catch { /* not up yet, we will spawn */ }
+  }
+  if (!backendAlreadyUp) {
+    startBackend();
+  }
 
   // 2. 等待后端就绪（最多 20 秒）
   console.log('[Electron] Waiting for backend on port', BACKEND_PORT, '...');
@@ -176,7 +186,15 @@ app.whenReady().then(async () => {
   await createWindow();
 
   app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) await createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      // macOS: backend was killed on window-all-closed, restart it
+      if (!pyProcess) {
+        startBackend();
+        try { await waitForPort(BACKEND_PORT); }
+        catch { console.warn('[Electron] Backend did not respond on reactivate'); }
+      }
+      await createWindow();
+    }
   });
 });
 
