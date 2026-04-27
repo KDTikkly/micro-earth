@@ -2,7 +2,7 @@
 
 > 呐……这个项目，我替你看着呢。
 > **Micro-Earth** — Phase 11 · 多智能体自主疏散 · 物理生存推演 · 高清卫星地表渲染 · **本地桌面应用**
-> Cyber Memphis Edition · **v11.1.1** · 3D GIS + Survival Command Terminal + Electron Desktop + **地球修复版**
+> Cyber Memphis Edition · **v11.2** · 3D GIS + Survival Command Terminal + Electron Desktop + **谷歌/高德智能切换版**
 
 <br/>
 
@@ -15,7 +15,7 @@
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
 ![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Google%2FAMap%20Auto--Switch-199900?style=flat-square)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron%2031%20%2B%20electron--builder-47848F?style=flat-square&logo=electron)
-![Phase](https://img.shields.io/badge/Phase-11.1.2%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-11.2%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 ---
@@ -379,6 +379,7 @@ LLM_BACKEND=stub
 | **v11.1** | **React 18.3.1 降级稳定化 · 3D 地球 useRef 崩溃修复 · 粉白科幻实验室 UI · GBK 编码根除 · Vite 8 构建验证** |
 | **v11.1.1** | **地球球体空白修复 · 高德卫星瓦片替换 · useEffect 依赖竞态修复 · GitHub Actions Win+Mac CI/CD** |
 | **v11.1.2** | **地图源智能切换：谷歌卫星首选，自动探测可达性，不可用时降级高德 · 热切换无需重建 Map 实例** |
+| **v11.2** | **版本统一至 11.2 · Win + Mac 同步打包发布 · 谷歌/高德卫星智能切换正式版** |
 
 ---
 
