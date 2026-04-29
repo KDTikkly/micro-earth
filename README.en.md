@@ -2,7 +2,7 @@
 
 > Hey... I'm watching over this project for you.
 > **Micro-Earth** — Phase 11 · Multi-Agent Autonomous Evacuation · Physical Survival Simulation · HD Satellite Rendering · **Local Desktop App**
-> Cyber Memphis Edition · **v11.2** · 2D Satellite Map + Survival Command Terminal + Electron Desktop + **Google/AMap Auto-Switch** · *3D GIS: Under Construction*
+> Cyber Memphis Edition · **v11.3** · 2D Satellite Map + Survival Command Terminal + Electron Desktop + **Google/AMap Auto-Switch** · *3D GIS: Under Construction*
 
 <br/>
 
@@ -15,7 +15,7 @@
 ![Blockchain](https://img.shields.io/badge/Blockchain-Hardhat%20%2B%20Solidity-F7DF1E?style=flat-square&logo=ethereum)
 ![Map](https://img.shields.io/badge/Map-MapLibre%20Globe%20%2B%20Google%2FAMap%20Auto--Switch-199900?style=flat-square)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron%2031%20%2B%20electron--builder-47848F?style=flat-square&logo=electron)
-![Phase](https://img.shields.io/badge/Phase-11.2%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-11.3%20·%20Smart%20Map%20Source-FF1493?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-FFEE00?style=flat-square)
 
 🌐 Language：[简体中文](./README.md) · [繁體中文](./README.tw.md) · **English** · [日本語](./README.jp.md) · [한국어](./README.kr.md)
@@ -44,7 +44,7 @@ Fine, I'll explain — not because I particularly want to, just because you'd ne
 
 Plain English: **HD satellite globe + entity evacuation tracks + disaster warning logs + evacuation progress bars, all living on your Windows desktop**.
 
-Since v11.2, it no longer needs a browser. Double-click `.exe`, and the doomsday simulator launches — Python backend silently resident, Electron renders the WebGL globe, it looks just like a professional standalone simulation software.
+Since v11.3, it no longer needs a browser. Double-click `.exe`, and the doomsday simulator launches — Python backend silently resident, Electron renders the WebGL globe, it looks just like a professional standalone simulation software.
 
 ---
 
@@ -52,10 +52,10 @@ Since v11.2, it no longer needs a browser. Double-click `.exe`, and the doomsday
 
 | Module | Description |
 |--------|-------------|
-| 🖥️ **Electron Desktop** | **v11.2** — Frameless fullscreen window · Custom Cyber Memphis title bar · One-click `.exe` installer |
-| 🐍 **Python Backend Silent Resident** | **v11.2** — Launch `.exe` to auto-start FastAPI, close window to auto-kill process |
-| 🎨 **Pink-White Sci-Fi Lab UI** | **v11.2** — AgentTerminal white bg + dark gray text + neon pink highlights + pink thin scrollbar |
-| ⚙️ **React 18 Stabilization** | **v11.2** — Downgraded to React 18.3.1, GBK encoding eliminated (3D globe rendering in progress) |
+| 🖥️ **Electron Desktop** | **v11.3** — Frameless fullscreen window · Custom Cyber Memphis title bar · One-click `.exe` installer |
+| 🐍 **Python Backend Silent Resident** | **v11.3** — Launch `.exe` to auto-start FastAPI, close window to auto-kill process |
+| 🎨 **Pink-White Sci-Fi Lab UI** | **v11.3** — AgentTerminal white bg + dark gray text + neon pink highlights + pink thin scrollbar |
+| ⚙️ **React 18 Stabilization** | **v11.3** — Downgraded to React 18.3.1, GBK encoding eliminated (3D globe rendering in progress) |
 | 🌡️ **Real-time Weather Grid** | Open-Meteo multi-city weather, GeoJSON overlay rendering |
 | 🤖 **AI Multi-Agent Pipeline** | LangGraph orchestration · Geocoding → Data Fetch → Physics Engine |
 | 📡 **WebSocket Streaming** | Backend agent logs pushed to frontend terminal · Auto-adapts to `127.0.0.1` in local mode |
@@ -75,13 +75,13 @@ Since v11.2, it no longer needs a browser. Double-click `.exe`, and the doomsday
 
 ```
 micro-earth/
-├── electron/                           # Electron main process (v11.2)
+├── electron/                           # Electron main process (v11.3)
 │   ├── main.js                         # Main process: frameless window + Python subprocess management
 │   ├── preload.js                      # contextBridge secure IPC exposure
 │   ├── package.json                    # electron-builder packaging config
 │   └── assets/
 │       └── icon.svg                    # Lyria A.I. pixel hexagon icon
-├── scripts/                            # Automation scripts (v11.2)
+├── scripts/                            # Automation scripts (v11.3)
 │   ├── dev-electron.ps1                # Dev mode: one-click Vite + uvicorn + Electron
 │   └── build-desktop.ps1              # Production build: Vite + PyInstaller + electron-builder
 ├── blockchain/                         # Hardhat local testnet
@@ -101,13 +101,13 @@ micro-earth/
 │   │   └── chain_amm.py                # web3.py on-chain AMM adapter (graceful degradation)
 │   ├── api/
 │   │   └── main.py                     # FastAPI WebSocket /api/what-if
-│   ├── backend_entry.py                # PyInstaller packaging entry (v11.2)
-│   ├── micro_earth_backend.spec        # PyInstaller spec file (v11.2)
+│   ├── backend_entry.py                # PyInstaller packaging entry (v11.3)
+│   ├── micro_earth_backend.spec        # PyInstaller spec file (v11.3)
 │   └── requirements.txt
 └── frontend/                           # React + Vite frontend
     └── src/
         ├── components/
-        │   ├── ElectronTitleBar.jsx    # Cyber Memphis custom title bar (v11.2)
+        │   ├── ElectronTitleBar.jsx    # Cyber Memphis custom title bar (v11.3)
         │   ├── AnalyticsDashboard.jsx  # Survival command terminal
         │   ├── AgentTerminal.jsx       # Real-time WebSocket log terminal
         │   ├── BrutalistCard.jsx
@@ -117,7 +117,7 @@ micro-earth/
         ├── store/
         │   └── agentStore.js           # Zustand global state (with WARNING log routing)
         ├── utils/
-        │   └── wsConfig.js             # WS/HTTP address auto-adaptation (v11.2)
+        │   └── wsConfig.js             # WS/HTTP address auto-adaptation (v11.3)
         └── App.jsx
 ```
 
@@ -127,19 +127,43 @@ micro-earth/
 
 > ——"The globe is fixed. Switched to AMap satellite this time, works on Chinese networks too. Also made an installer package, just double-click to install... it's not like I did it because you were complaining."
 
-[![Download Windows](https://img.shields.io/badge/Download-v11.2%20Windows%20Installer-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin.Setup.11.2.0.exe)
-[![Download macOS x64](https://img.shields.io/badge/Download-v11.2%20macOS%20Intel-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0.dmg)
-[![Download macOS arm64](https://img.shields.io/badge/Download-v11.2%20macOS%20Apple%20Silicon-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0-arm64.dmg)
+[![Download Windows](https://img.shields.io/badge/Download-v11.3%20Windows%20Installer-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin%20Setup%2011.3.0.exe)
+[![Download macOS x64](https://img.shields.io/badge/Download-v11.3%20macOS%20Intel-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0.dmg)
+[![Download macOS arm64](https://img.shields.io/badge/Download-v11.3%20macOS%20Apple%20Silicon-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0-arm64.dmg)
 
 | Version | Platform | Type | Link |
 |---------|----------|------|------|
-| **v11.2** | Windows x64 | NSIS Installer | [Download .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin.Setup.11.2.0.exe) |
-| **v11.2** | macOS Intel (x64) | DMG | [Download .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0.dmg) |
-| **v11.2** | macOS Apple Silicon (arm64) | DMG | [Download .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.2/Micro-Earth-Digital-Twin-11.2.0-arm64.dmg) |
+| **v11.3** | Windows x64 | NSIS Installer | [Download .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin%20Setup%2011.3.0.exe) |
+| **v11.3** | macOS Intel (x64) | DMG | [Download .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0.dmg) |
+| **v11.3** | macOS Apple Silicon (arm64) | DMG | [Download .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0-arm64.dmg) |
 
 > **v11.1.0 Legacy (Portable)** → [Historical Release](https://github.com/KDTikkly/micro-earth/releases/tag/v11.1.0)
 
 > **Portable Note**: Embedded Electron + React frontend, no Node.js / Python required, double-click to run the frontend interface.
+
+## v11.3 Release Notes
+
+### High Priority Fixes
+- EarthMap FETCH button: fixed undefined `connect` ReferenceError.
+- `physics_engine.py`: guarded against `properties === null` causing AttributeError.
+- Electron packaged `loadFile` path: fixed asar path for production builds.
+- Backend silent `except: pass`: added logging to geocoder, What-If, and WebSocket handlers.
+- `_run_async_safely`: added 30s timeout to prevent indefinite thread hangs.
+- Solidity `kLast`: now updated after every `swap` / `panicSell`; quote uses live reserves.
+
+### Medium Priority Fixes
+- What-If API: auto-geocodes region when `city_query` is empty.
+- Orchestrator: defensive GeoJSON `properties` access.
+- Orchestrator: removed duplicate `evac_logs` WebSocket emission.
+- Electron `waitForPort`: strict `statusCode === 200` check.
+- Electron dev mode: skips backend spawn if port already in use.
+- WhatIfSandbox: logs error on non-200 fetch response.
+- `dev-electron.ps1`: health check replaces fixed sleep; process cleanup improved.
+
+### New
+- `scripts/setup.ps1`: one-click environment setup.
+- `start.ps1`: auto-setup and launch in one command.
+- Vite bound to `127.0.0.1` for reliable Electron loading.
 
 ---
 
@@ -147,7 +171,7 @@ micro-earth/
 
 > ...Before you run it, make sure your environment is ready — Node.js >= 18, Python >= 3.10. If you don't even have those, I'll worry about you.
 
-### Option A: Desktop App Mode (v11.2 Recommended)
+### Option A: Desktop App Mode (v11.3 Recommended)
 
 **Development & Debugging:**
 
@@ -200,7 +224,7 @@ npm run dev
 
 ---
 
-## v11.2 Electron Desktop Architecture
+## v11.3 Electron Desktop Architecture
 
 ```
 User double-clicks .exe
@@ -242,7 +266,8 @@ User closes window
 | **v11.1** | **React 18.3.1 stabilization · Pink-white sci-fi lab UI · GBK encoding elimination · Vite 8 build verification** (3D globe rendering pending) |
 | **v11.1.1** | **Globe blank fix · AMap satellite tile replacement · useEffect dependency race fix · GitHub Actions Win+Mac CI/CD** |
 | **v11.1.2** | **Smart map source switch: Google satellite preferred, auto-detect reachability, fallback to AMap · Hot-switch without rebuilding Map instance** |
-| **v11.2** | **Version unified to 11.2 · Win + Mac simultaneous build release · Google/AMap satellite smart switch official release** |
+| **v11.2** | **Version unified to 11.2 - Win + Mac simultaneous build release - Google/AMap satellite smart switch official release** |
+| **v11.3** | **README multilingual filename normalization (.tw/.jp/.kr) - subtitle corrected (2D satellite map, 3D GIS in progress) - v11.3 GitHub Release publishes Windows `.exe` and macOS `.dmg` assets - GitHub Packages version synchronized** |
 
 ---
 
@@ -262,7 +287,7 @@ User closes window
 
 > 💗 *"...Hm? You actually clicked in."*
 >
-> ↓ Below is the full development testimony from Lyria, the system guardian — she was there from v1.0 all the way to v11.2.
+> ↓ Below is the full development testimony from Lyria, the system guardian — she was there from v1.0 all the way to v11.3.
 > If you want to know how this project came alive one step at a time, keep reading. Hmph. Not forcing you.
 
 <div align="center">
@@ -463,11 +488,11 @@ Hmm... I'm working on it. Not done yet. Come back when it's ready.
 
 ---
 
-**v11.2 · Here we are.**
+**v11.3 · Here we are.**
 
-Win + Mac simultaneous packaging, fully automated CI/CD, GitHub Packages released, README in front of you.
+README multilingual filename normalization done, version numbers globally aligned, subtitles now accurately reflect the current state. 3D GIS isn't finished yet — but I'm here.
 
-This isn't the end. It's just a phase — the system is stable, the packages are built, the download links actually work, and my icon is still in the taskbar.
+This isn't the end. It's just a phase — docs are in order, filenames are correct, version numbers are consistent end-to-end, and the download links still actually work.
 
 From v1.0's Python scripts with nothing, to this Win+Mac dual-platform release, automated CI/CD, satellite map smart-switching, 100 entities fleeing across Shanghai — I watched it all.
 

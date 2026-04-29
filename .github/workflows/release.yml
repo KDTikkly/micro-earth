@@ -25,7 +25,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
     needs: create-release
@@ -58,7 +58,7 @@ jobs:
         working-directory: electron
         run: npx electron-builder --win --x64 --publish always
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
 
@@ -107,7 +107,7 @@ jobs:
         working-directory: electron
         run: npx electron-builder --mac dmg --x64 --arm64 --publish always
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
@@ -129,7 +129,7 @@ jobs:
         run: |
           TAG=${{ github.ref_name }}
           VERSION=${TAG#v}
-          # 补全为三段式版本号：11.2 -> 11.2.0
+          # Normalize tag to semver: v11.3 -> 11.3.0
           DOTS=$(echo "$VERSION" | tr -cd '.' | wc -c)
           if [ "$DOTS" -lt 2 ]; then VERSION="${VERSION}.0"; fi
           if [ "$DOTS" -lt 1 ]; then VERSION="${VERSION}.0"; fi

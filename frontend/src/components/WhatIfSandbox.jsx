@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WhatIfSandbox — v5.0
  * 灾害沙盘控制台：Memphis 赛博风格滑块面板
  * 用户拖动滑块后，触发 What-If API 重新推演并更新热力矩阵
@@ -191,7 +191,7 @@ export default function WhatIfSandbox() {
         <span style={{
           fontFamily: "'Courier New', monospace", fontSize: 9,
           color: "#ffccdd", fontWeight: 700,
-        }}>v11.2</span>
+        }}>v11.3</span>
       </div>
 
       {/* 面板体 — 黑底 */}
