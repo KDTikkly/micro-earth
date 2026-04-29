@@ -22,29 +22,29 @@
 
 ---
 
-## v11.3 Release Notes
+## v11.3 릴리스 노트
 
-### High Priority Fixes
-- EarthMap FETCH button: fixed undefined `connect` ReferenceError.
-- `physics_engine.py`: guarded against `properties === null` causing AttributeError.
-- Electron packaged `loadFile` path: fixed asar path for production builds.
-- Backend silent `except: pass`: added logging to geocoder, What-If, and WebSocket handlers.
-- `_run_async_safely`: added 30s timeout to prevent indefinite thread hangs.
-- Solidity `kLast`: now updated after every `swap` / `panicSell`; quote uses live reserves.
+### 높은 우선순위 수정
+- EarthMap `FETCH` 버튼: 정의되지 않은 `connect` 로 인한 ReferenceError 수정.
+- `physics_engine.py`: `properties === null` 상황을 방어해 AttributeError 방지.
+- Electron 패키지의 `loadFile` 경로: 프로덕션 빌드의 asar 경로 문제 수정.
+- 백엔드의 조용한 `except: pass`: geocoder, What-If, WebSocket handlers에 로깅 추가.
+- `_run_async_safely`: 무기한 스레드 hang을 막기 위해 30초 timeout 추가.
+- Solidity `kLast`: 모든 `swap` / `panicSell` 이후 업데이트하며, quote는 실시간 reserves 사용.
 
-### Medium Priority Fixes
-- What-If API: auto-geocodes region when `city_query` is empty.
-- Orchestrator: defensive GeoJSON `properties` access.
-- Orchestrator: removed duplicate `evac_logs` WebSocket emission.
-- Electron `waitForPort`: strict `statusCode === 200` check.
-- Electron dev mode: skips backend spawn if port already in use.
-- WhatIfSandbox: logs error on non-200 fetch response.
-- `dev-electron.ps1`: health check replaces fixed sleep; process cleanup improved.
+### 중간 우선순위 수정
+- What-If API: `city_query` 가 비어 있을 때 region 자동 geocoding.
+- Orchestrator: GeoJSON `properties` 방어적 접근 추가.
+- Orchestrator: 중복 `evac_logs` WebSocket 전송 제거.
+- Electron `waitForPort`: `statusCode === 200` 엄격 검사.
+- Electron 개발 모드: 포트가 이미 사용 중이면 백엔드 spawn 생략.
+- WhatIfSandbox: 200이 아닌 fetch 응답에서 error 로그 출력.
+- `dev-electron.ps1`: 고정 sleep을 health check로 교체하고 프로세스 cleanup 개선.
 
-### New
-- `scripts/setup.ps1`: one-click environment setup.
-- `start.ps1`: auto-setup and launch in one command.
-- Vite bound to `127.0.0.1` for reliable Electron loading.
+### 신규
+- `scripts/setup.ps1`: 원클릭 환경 설정.
+- `start.ps1`: 한 명령으로 자동 설정 및 실행.
+- 안정적인 Electron 로딩을 위해 Vite를 `127.0.0.1` 에 바인딩.
 
 ---
 

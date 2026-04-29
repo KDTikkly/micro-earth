@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-  Micro-Earth · 开发模式桌面端启动脚本
-  自动启动：Vite dev-server + Python uvicorn + Electron 窗口
+  Micro-Earth dev launcher
+  Starts: Vite dev-server + Python uvicorn + Electron window
 
 .USAGE
   cd micro-earth
@@ -12,10 +12,10 @@ $ErrorActionPreference = "Continue"
 $ROOT = Split-Path -Parent $PSScriptRoot
 
 Write-Host ""
-Write-Host "  MICRO-EARTH · DEV MODE (Electron + Vite + FastAPI)" -ForegroundColor Cyan
+Write-Host "  MICRO-EARTH DEV MODE (Electron + Vite + FastAPI)" -ForegroundColor Cyan
 Write-Host ""
 
-# ── 寻找后端 Python ──────────────────────────────────────────
+# ── Find backend Python ──────────────────────────────────────
 $pyExe = $null
 $candidates = @(
   "$ROOT\backend\.venv\Scripts\python.exe",
@@ -29,29 +29,54 @@ foreach ($c in $candidates) {
 if (-not $pyExe) { $pyExe = "python" }
 Write-Host "[INFO] Python: $pyExe" -ForegroundColor Gray
 
-# ── 1. 启动 Python 后端 (后台) ───────────────────────────────
+# ── 1. Start Python backend (background) ─────────────────────
 Write-Host "[1] Starting Python backend on :8000..." -ForegroundColor Yellow
-$beJob = Start-Process -NoNewWindow -FilePath $pyExe `
+$beLog = "$ROOT\backend\uvicorn.log"
+$beErr = "$ROOT\backend\uvicorn.err.log"
+$beJob = Start-Process -FilePath $pyExe `
   -ArgumentList "-m","uvicorn","api.main:app","--host","127.0.0.1","--port","8000" `
-  -WorkingDirectory "$ROOT\backend" -PassThru
-Write-Host "    PID: $($beJob.Id)" -ForegroundColor Gray
+  -WorkingDirectory "$ROOT\backend" -PassThru -WindowStyle Hidden `
+  -RedirectStandardOutput $beLog -RedirectStandardError $beErr
+Write-Host "    PID: $($beJob.Id)  (logs: backend\uvicorn.log)" -ForegroundColor Gray
 
-# ── 2. 启动 Vite dev-server (后台) ──────────────────────────
+# ── 2. Start Vite dev-server (background) ────────────────────
 Write-Host "[2] Starting Vite dev-server on :5180..." -ForegroundColor Yellow
-$feJob = Start-Process -NoNewWindow -FilePath "npm" `
-  -ArgumentList "run","dev" `
-  -WorkingDirectory "$ROOT\frontend" -PassThru
-Write-Host "    PID: $($feJob.Id)" -ForegroundColor Gray
+$feLog = "$ROOT\frontend\vite.log"
+$feErr = "$ROOT\frontend\vite.err.log"
+$feJob = Start-Process -FilePath "cmd.exe" `
+  -ArgumentList "/c","npm","run","dev" `
+  -WorkingDirectory "$ROOT\frontend" -PassThru -WindowStyle Hidden `
+  -RedirectStandardOutput $feLog -RedirectStandardError $feErr
+Write-Host "    PID: $($feJob.Id)  (logs: frontend\vite.log)" -ForegroundColor Gray
 
-# ── 3. 等待前后端就绪 ────────────────────────────────────────
+# ── 3. Wait for services (TCP port check, up to 30s) ─────────
 Write-Host "[3] Waiting for services to be ready..."
-Start-Sleep -Seconds 6
 
-# ── 4. 启动 Electron（前台，关闭即结束所有） ─────────────────
+function Wait-ForPort {
+  param([int]$Port, [string]$Label, [int]$MaxSeconds = 30)
+  $deadline = (Get-Date).AddSeconds($MaxSeconds)
+  while ((Get-Date) -lt $deadline) {
+    try {
+      $tcp = New-Object System.Net.Sockets.TcpClient
+      $tcp.Connect("127.0.0.1", $Port)
+      $tcp.Close()
+      Write-Host "    $Label ready [OK]" -ForegroundColor Green
+      return
+    } catch {
+      Start-Sleep -Seconds 1
+    }
+  }
+  Write-Host "    [WARN] $Label not responding after ${MaxSeconds}s, proceeding anyway" -ForegroundColor Red
+}
+
+Wait-ForPort -Port 8000 -Label "Backend"
+Wait-ForPort -Port 5180 -Label "Vite"
+
+# ── 4. Launch Electron (foreground, closing ends everything) ──
 Write-Host "[4] Launching Electron window..." -ForegroundColor Cyan
 Set-Location "$ROOT\electron"
 
-# 确保 electron 已安装
+# Ensure electron is installed
 if (-not (Test-Path "$ROOT\electron\node_modules\.bin\electron.cmd")) {
   Write-Host "    Installing electron deps first..." -ForegroundColor Gray
   npm install
@@ -59,13 +84,14 @@ if (-not (Test-Path "$ROOT\electron\node_modules\.bin\electron.cmd")) {
 
 npx electron . --dev
 
-# ── 5. 清理子进程 ────────────────────────────────────────────
+# ── 5. Cleanup child processes ────────────────────────────────
 Write-Host ""
 Write-Host "[5] Cleaning up background processes..." -ForegroundColor Yellow
-Stop-Process -Id $beJob.Id -Force -ErrorAction SilentlyContinue
-Stop-Process -Id $feJob.Id -Force -ErrorAction SilentlyContinue
-# 杀掉所有相关的 uvicorn / vite 进程
-Get-Process | Where-Object { $_.Name -match "python|node" } | ForEach-Object {
-  $_.Kill() 2>$null
+function Stop-OwnedProcessTree {
+  param([int]$ProcessId)
+  if ($ProcessId -le 0) { return }
+  & taskkill.exe /PID $ProcessId /T /F 2>$null | Out-Null
 }
-Write-Host "[OK] All processes terminated. Goodbye." -ForegroundColor Green
+Stop-OwnedProcessTree -ProcessId $beJob.Id
+Stop-OwnedProcessTree -ProcessId $feJob.Id
+Write-Host "[OK] Backend/Vite process trees terminated. Goodbye." -ForegroundColor Green

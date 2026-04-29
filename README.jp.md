@@ -22,29 +22,29 @@
 
 ---
 
-## v11.3 Release Notes
+## v11.3 リリースノート
 
-### High Priority Fixes
-- EarthMap FETCH button: fixed undefined `connect` ReferenceError.
-- `physics_engine.py`: guarded against `properties === null` causing AttributeError.
-- Electron packaged `loadFile` path: fixed asar path for production builds.
-- Backend silent `except: pass`: added logging to geocoder, What-If, and WebSocket handlers.
-- `_run_async_safely`: added 30s timeout to prevent indefinite thread hangs.
-- Solidity `kLast`: now updated after every `swap` / `panicSell`; quote uses live reserves.
+### 高優先度の修正
+- EarthMap の `FETCH` ボタン：未定義の `connect` による ReferenceError を修正。
+- `physics_engine.py`：`properties === null` の場合を保護し、AttributeError を回避。
+- Electron パッケージ版の `loadFile` パス：本番ビルドでの asar パスを修正。
+- バックエンドの静かな `except: pass`：geocoder、What-If、WebSocket handlers にログを追加。
+- `_run_async_safely`：スレッドの無期限ハングを防ぐため 30 秒タイムアウトを追加。
+- Solidity `kLast`：各 `swap` / `panicSell` 後に更新し、quote はライブ reserves を使用。
 
-### Medium Priority Fixes
-- What-If API: auto-geocodes region when `city_query` is empty.
-- Orchestrator: defensive GeoJSON `properties` access.
-- Orchestrator: removed duplicate `evac_logs` WebSocket emission.
-- Electron `waitForPort`: strict `statusCode === 200` check.
-- Electron dev mode: skips backend spawn if port already in use.
-- WhatIfSandbox: logs error on non-200 fetch response.
-- `dev-electron.ps1`: health check replaces fixed sleep; process cleanup improved.
+### 中優先度の修正
+- What-If API：`city_query` が空の場合、region を自動ジオコーディング。
+- Orchestrator：GeoJSON `properties` への防御的アクセスを追加。
+- Orchestrator：重複した `evac_logs` WebSocket 送信を削除。
+- Electron `waitForPort`：`statusCode === 200` を厳密にチェック。
+- Electron 開発モード：ポート使用中の場合はバックエンド起動をスキップ。
+- WhatIfSandbox：非 200 の fetch レスポンスでエラーログを出力。
+- `dev-electron.ps1`：固定 sleep をヘルスチェックに置換し、プロセス cleanup を改善。
 
-### New
-- `scripts/setup.ps1`: one-click environment setup.
-- `start.ps1`: auto-setup and launch in one command.
-- Vite bound to `127.0.0.1` for reliable Electron loading.
+### 新規追加
+- `scripts/setup.ps1`：ワンクリック環境セットアップ。
+- `start.ps1`：1 コマンドで自動セットアップして起動。
+- Electron で確実に読み込めるよう、Vite を `127.0.0.1` にバインド。
 
 ---
 

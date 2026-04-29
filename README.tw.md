@@ -141,29 +141,29 @@ micro-earth/
 
 > **便攜版說明**：內嵌 Electron + React 前端，無需安裝 Node.js / Python，雙擊即運行前端介面。
 
-## v11.3 Release Notes
+## v11.3 發布說明
 
-### High Priority Fixes
-- EarthMap FETCH button: fixed undefined `connect` ReferenceError.
-- `physics_engine.py`: guarded against `properties === null` causing AttributeError.
-- Electron packaged `loadFile` path: fixed asar path for production builds.
-- Backend silent `except: pass`: added logging to geocoder, What-If, and WebSocket handlers.
-- `_run_async_safely`: added 30s timeout to prevent indefinite thread hangs.
-- Solidity `kLast`: now updated after every `swap` / `panicSell`; quote uses live reserves.
+### 高優先級修復
+- EarthMap 的 `FETCH` 按鈕：修復未定義 `connect` 導致的 ReferenceError。
+- `physics_engine.py`：防護 `properties === null` 場景，避免 AttributeError。
+- Electron 打包後的 `loadFile` 路徑：修復生產構建中的 asar 路徑問題。
+- 後端靜默 `except: pass`：為 geocoder、What-If、WebSocket handlers 增加日誌。
+- `_run_async_safely`：新增 30 秒逾時，防止執行緒無限掛起。
+- Solidity `kLast`：每次 `swap` / `panicSell` 後都會更新，報價使用即時儲備量。
 
-### Medium Priority Fixes
-- What-If API: auto-geocodes region when `city_query` is empty.
-- Orchestrator: defensive GeoJSON `properties` access.
-- Orchestrator: removed duplicate `evac_logs` WebSocket emission.
-- Electron `waitForPort`: strict `statusCode === 200` check.
-- Electron dev mode: skips backend spawn if port already in use.
-- WhatIfSandbox: logs error on non-200 fetch response.
-- `dev-electron.ps1`: health check replaces fixed sleep; process cleanup improved.
+### 中優先級修復
+- What-If API：當 `city_query` 為空時自動對區域進行地理編碼。
+- Orchestrator：防禦式存取 GeoJSON `properties`。
+- Orchestrator：移除重複的 `evac_logs` WebSocket 推送。
+- Electron `waitForPort`：嚴格檢查 `statusCode === 200`。
+- Electron 開發模式：若連接埠已被占用，則跳過後端程序啟動。
+- WhatIfSandbox：非 200 fetch 回應會輸出錯誤日誌。
+- `dev-electron.ps1`：健康檢查取代固定 sleep，並改進程序清理。
 
-### New
-- `scripts/setup.ps1`: one-click environment setup.
-- `start.ps1`: auto-setup and launch in one command.
-- Vite bound to `127.0.0.1` for reliable Electron loading.
+### 新增
+- `scripts/setup.ps1`：一鍵環境初始化。
+- `start.ps1`：一條命令自動初始化並啟動。
+- Vite 綁定到 `127.0.0.1`，提升 Electron 載入可靠性。
 
 ---
 

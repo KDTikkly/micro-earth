@@ -63,15 +63,11 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
           setRegion(data.data.region);
           setCoords(data.data.lat, data.data.lon);
         }
-        if (data.event === "risk" && data.data) {
-          useAgentStore.getState().setRiskData(data.data);
-        }
-        if (data.event === "entities" && data.data) {
-          useAgentStore.getState().setEntityData(data.data);
-        }
-        if (data.event === "trade" && data.data) {
-          useAgentStore.getState().appendTrade(data.data);
-        }
+        if (data.event === "risk"     && data.data) useAgentStore.getState().setRiskData(data.data);
+        if (data.event === "entities" && data.data) useAgentStore.getState().setEntityData(data.data);
+        if (data.event === "trade"    && data.data) useAgentStore.getState().appendTrade(data.data);
+        if (data.event === "heatmap"  && data.data) useAgentStore.getState().setHeatmap(data.data);
+        if (data.event === "windfield"&& data.data) useAgentStore.getState().setWindfield(data.data);
         if (data.event === "done")  setStatus("IDLE");
         if (data.event === "error") setStatus("ERROR");
         appendLog({ ...data, ts });
@@ -85,8 +81,10 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
       appendLog({ event: "error", message: "[ERROR] WebSocket 连接失败", ts: new Date().toLocaleTimeString() });
     };
 
-    ws.onclose = () => { if (status !== "ERROR") setStatus("IDLE"); };
-  }, [region, lat, lon, appendLog, setStatus, setGeoJson, clearLogs, setRegion, setCoords, status]);
+    ws.onclose = () => {
+      if (useAgentStore.getState().status !== "ERROR") setStatus("IDLE");
+    };
+  }, [region, lat, lon, appendLog, setStatus, setGeoJson, clearLogs, setRegion, setCoords]);
 
   const handleCommand = (e) => {
     if (e.key !== "Enter") return;
@@ -96,6 +94,15 @@ export default function AgentTerminal({ region = "深圳", lat = 22.69, lon = 11
     appendLog({ event: "cmd", message: `> ${cmd}`, ts: new Date().toLocaleTimeString() });
     connect(cmd);
   };
+
+  useEffect(() => {
+    return () => { wsRef.current?.close(); };
+  }, []);
+
+  const fetchSeq = useAgentStore((s) => s.fetchSeq);
+  useEffect(() => {
+    if (fetchSeq > 0) connect();
+  }, [fetchSeq, connect]);
 
   useEffect(() => {
     if (autoScroll) {

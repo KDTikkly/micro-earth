@@ -13,6 +13,7 @@ export default defineConfig({
     include: ['maplibre-gl'],
   },
   server: {
+    host: '127.0.0.1',
     port: 5180,
     proxy: {
       '/api': 'http://localhost:8000',

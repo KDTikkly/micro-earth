@@ -42,6 +42,8 @@ import WhatIfSandbox from "./components/WhatIfSandbox";
 import { useAgentStore } from "./store/agentStore";
 import lyriaImg from "./assets/lyria-reverie.png";
 import EarthMap from "./map/EarthMap";
+import MultiCityRadar from "./components/MultiCityRadar";
+import { WS_BASE } from "./utils/wsConfig";
 
 const REGIONS = [
   { label: "深圳", lat: 22.69, lon: 114.39 },
@@ -57,7 +59,7 @@ function TemporalScrubber() {
   const { windfield, timelineHour, setTimelineHour } = useAgentStore();
   const [playing, setPlaying] = useState(false);
   const intervalRef = useRef(null);
-  const maxHour = (windfield?.total_hours ?? 72) - 1;
+  const maxHour = Math.max((windfield?.total_hours ?? 72) - 1, 0);
   const hasData = !!windfield?.total_hours;
 
   // 当前帧时间标签
@@ -196,7 +198,7 @@ function TemporalScrubber() {
             type="range"
             className="temporal-scrubber"
             min={0}
-            max={maxHour || 71}
+            max={maxHour > 0 ? maxHour : 71}
             step={1}
             value={timelineHour}
             onChange={(e) => setTimelineHour(Number(e.target.value))}
@@ -775,12 +777,17 @@ function AppInner() {
           </div>
         </motion.div>
 
-        {/* 最右侧：Analytics 仪表盘 */}
+        {/* 最右侧：Analytics 仪表盘 + 多城并发雷达 */}
         <motion.div
           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
-          style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}
+          style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", gap: 8, height: "100%" }}
         >
-          <AnalyticsDashboard riskData={riskData} region={region} />
+          <div style={{ flex: "1 1 0", minHeight: 0, overflow: "auto" }}>
+            <AnalyticsDashboard riskData={riskData} region={region} />
+          </div>
+          <div style={{ flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" }}>
+            <MultiCityRadar wsBaseUrl={WS_BASE} />
+          </div>
         </motion.div>
       </main>
 

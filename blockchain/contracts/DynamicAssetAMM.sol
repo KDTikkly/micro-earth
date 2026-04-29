@@ -136,8 +136,9 @@ contract DynamicAssetAMM is Ownable {
         public view returns (uint256 stableOut)
     {
         require(reserveAsset > 0, "AMM: empty pool");
+        uint256 k = reserveAsset * reserveStable;
         uint256 newAsset = reserveAsset + assetIn;
-        uint256 newStable = kLast / newAsset;
+        uint256 newStable = k / newAsset;
         stableOut = reserveStable > newStable ? reserveStable - newStable : 0;
     }
 
@@ -163,7 +164,7 @@ contract DynamicAssetAMM is Ownable {
 
         reserveAsset  += assetIn;
         reserveStable -= stableOut;
-        // k stays constant (minor rounding accepted)
+        kLast          = reserveAsset * reserveStable;
 
         uint256 newPrice = spotPrice();
         emit SwapAssetForStable(msg.sender, assetIn, stableOut, newPrice / 1e14, kLast);
@@ -187,6 +188,7 @@ contract DynamicAssetAMM is Ownable {
 
         reserveAsset  += assetIn;
         reserveStable -= stableOut;
+        kLast          = reserveAsset * reserveStable;
 
         uint256 newPrice = spotPrice();
         emit PanicSell(msg.sender, entityId, assetIn, stableOut, newPrice);

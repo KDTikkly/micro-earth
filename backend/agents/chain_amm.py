@@ -183,7 +183,6 @@ def swap_panic_sell(entity_id: int, asset_amount: float) -> Dict[str, Any]:
             }
         except Exception as e:
             logger.warning("[ChainAMM] panicSell on-chain failed, falling back: %s", e)
-            _chain_mode_fallback = False
 
     # ── Simulated fallback ──────────────────────────────────────────────────
     from agents.entity_simulator import amm_swap_asset_for_stable, amm_price
