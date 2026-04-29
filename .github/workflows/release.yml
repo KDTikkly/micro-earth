@@ -54,13 +54,24 @@ jobs:
           npm install
           node make-ico.cjs
 
-      - name: Build & Publish Windows NSIS installer
+      - name: Build Windows NSIS installer
         working-directory: electron
-        run: npx electron-builder --win --x64 --publish always
+        run: npx electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
+
+      - name: Upload Windows installer to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            dist-electron/*.exe
+            dist-electron/*.exe.blockmap
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
     needs: create-release
@@ -103,14 +114,25 @@ jobs:
         working-directory: electron
         run: npm install
 
-      - name: Build & Publish macOS DMG
+      - name: Build macOS DMG
         working-directory: electron
-        run: npx electron-builder --mac dmg --x64 --arm64 --publish always
+        run: npx electron-builder --mac dmg --x64 --arm64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
+
+      - name: Upload macOS DMGs to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            dist-electron/*.dmg
+            dist-electron/*.dmg.blockmap
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-package:
     runs-on: ubuntu-latest
