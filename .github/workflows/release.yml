@@ -70,6 +70,7 @@ jobs:
             dist-electron/*.exe
             dist-electron/*.exe.blockmap
           fail_on_unmatched_files: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -131,6 +132,7 @@ jobs:
             dist-electron/*.dmg
             dist-electron/*.dmg.blockmap
           fail_on_unmatched_files: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

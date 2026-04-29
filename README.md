@@ -131,13 +131,13 @@ micro-earth/
 
 > ——「地球修好了。这次换了高德卫星图，国内网络也能跑。顺便做了安装包版本，双击就装好了……才不是因为你嫌麻烦才做的。」
 
-[![Download Windows](https://img.shields.io/badge/Download-v11.3%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin%20Setup%2011.3.0.exe)
+[![Download Windows](https://img.shields.io/badge/Download-v11.3%20Windows%20安装包-FF69B4?style=for-the-badge&logo=windows)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin.Setup.11.3.0.exe)
 [![Download macOS x64](https://img.shields.io/badge/Download-v11.3%20macOS%20Intel-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0.dmg)
 [![Download macOS arm64](https://img.shields.io/badge/Download-v11.3%20macOS%20Apple%20Silicon-A0A0A0?style=for-the-badge&logo=apple)](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0-arm64.dmg)
 
 | 版本 | 平台 | 类型 | 链接 |
 |------|------|------|------|
-| **v11.3** | Windows x64 | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin%20Setup%2011.3.0.exe) |
+| **v11.3** | Windows x64 | NSIS 安装包 | [直接下载 .exe →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin.Setup.11.3.0.exe) |
 | **v11.3** | macOS Intel (x64) | DMG | [直接下载 .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0.dmg) |
 | **v11.3** | macOS Apple Silicon (arm64) | DMG | [直接下载 .dmg →](https://github.com/KDTikkly/micro-earth/releases/download/v11.3/Micro-Earth-Digital-Twin-11.3.0-arm64.dmg) |
 
